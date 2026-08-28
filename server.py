@@ -66,16 +66,19 @@ class AstronautSelectRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Render main Spacecraft HUD & Mission Control Dashboard."""
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "system_name": SYSTEM_NAME,
-        "system_version": SYSTEM_VERSION,
-        "space_station": SPACE_STATION,
-        "agency": AGENCY,
-        "crew_profiles": pipeline.crew_profiles,
-        "active_astronaut": pipeline.active_astronaut,
-        "interventions": pipeline.interventions.get_all_interventions()
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "system_name": SYSTEM_NAME,
+            "system_version": SYSTEM_VERSION,
+            "space_station": SPACE_STATION,
+            "agency": AGENCY,
+            "crew_profiles": pipeline.crew_profiles,
+            "active_astronaut": pipeline.active_astronaut,
+            "interventions": pipeline.interventions.get_all_interventions()
+        }
+    )
 
 @app.get("/api/status")
 async def get_status():
