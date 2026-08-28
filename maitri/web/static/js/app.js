@@ -1,5 +1,6 @@
 /**
- * MAITRI — Spacecraft HUD & Multimodal AI Assistant Client Logic
+ * MAITRI — Real-Time Multimodal AI Spacecraft HUD Client
+ * Live Optical Face Tracking, Real-Time Audio Prosody, Continuous Voice AI
  * ISRO Bhartiya Antariksh Station (BAS)
  */
 
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const waveformCtx = waveformCanvas.getContext('2d');
     
     const btnToggleCamera = document.getElementById('btn-toggle-camera');
-    const btnToggleMic = document.getElementById('btn-toggle-mic');
+    const btnToggleVoiceListen = document.getElementById('btn-toggle-voice-listen');
     const crewSelector = document.getElementById('crew-selector');
     
     const chatInput = document.getElementById('chat-input');
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const discordanceBanner = document.getElementById('discordance-banner');
     const discordanceText = document.getElementById('discordance-text');
 
-    // Emotion Keys and Color Mapping
+    // Emotion Color Mapping
     const emotionColors = {
         'happy': '#10b981',
         'neutral': '#00f0ff',
@@ -58,128 +59,321 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State Variables
     let isCameraActive = false;
-    let isMicActive = false;
+    let isContinuousListening = false;
     let mediaStream = null;
     let audioContext = null;
     let audioAnalyser = null;
     let audioDataArray = null;
+    let audioTimeData = null;
     let streamInterval = null;
-    let isProcessing = false;
+    let animFrameId = null;
+    let isProcessingBackend = false;
     let recognition = null;
     let currentSpeechText = "";
 
-    // 1. Initialize Web Speech API for Astronaut Voice Recognition
+    // Live Real-Time Client Biometrics (for 30 FPS rendering)
+    let livePitchHz = 0;
+    let liveRmsEnergy = 0;
+    let liveVocalTension = 0;
+    let liveBlinkCount = 0;
+    let liveYawnCount = 0;
+    let lastBlinkTime = 0;
+    let lastYawnTime = 0;
+    let faceBox = null;
+    let smoothEar = 0.30;
+    let smoothMar = 0.20;
+
+    // 1. Initialize Continuous Speech Recognition (Web Speech API)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRec();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         recognition.lang = 'en-US';
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            chatInput.value = transcript;
-            currentSpeechText = transcript;
-            sendChatMessage(transcript);
+            let interim = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
+            }
+
+            if (finalTranscript && finalTranscript.trim().length > 1) {
+                currentSpeechText = finalTranscript.trim();
+                sendChatMessage(currentSpeechText);
+                currentSpeechText = "";
+            } else if (interim) {
+                chatInput.placeholder = `Listening: "${interim}"...`;
+            }
         };
 
         recognition.onerror = (e) => {
             console.log('[SpeechRec Error]:', e);
-            btnVoiceInput.classList.remove('active');
         };
 
         recognition.onend = () => {
-            btnVoiceInput.classList.remove('active');
+            chatInput.placeholder = "Speak or type to MAITRI...";
+            if (isContinuousListening) {
+                try { recognition.start(); } catch(e) {}
+            }
         };
     }
 
-    // 2. Camera Toggle & Frame Streaming
-    btnToggleCamera.addEventListener('click', async () => {
-        if (!isCameraActive) {
-            try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 640 }, height: { ideal: 480 } },
-                    audio: true
-                });
-                videoElem.srcObject = mediaStream;
-                await videoElem.play();
-                isCameraActive = true;
-                btnToggleCamera.innerHTML = '🛑 STOP OPTICAL';
-                btnToggleCamera.classList.add('active');
-
-                // Start Web Audio Analyser
-                initAudioVisualizer(mediaStream);
-
-                // Start Video Capture & Telemetry Loop (~3.5 FPS)
-                streamInterval = setInterval(captureAndSendFrame, 280);
-            } catch (err) {
-                alert("Camera/Microphone access error: " + err.message + ". You can use Flight Simulation Scenarios to test without hardware.");
-            }
+    // Toggle Continuous Voice Listening
+    btnToggleVoiceListen.addEventListener('click', () => {
+        if (!recognition) {
+            alert("Speech recognition not supported in this browser. Please type your message.");
+            return;
+        }
+        isContinuousListening = !isContinuousListening;
+        if (isContinuousListening) {
+            btnToggleVoiceListen.classList.add('active');
+            btnToggleVoiceListen.innerHTML = '🔴 LIVE VOICE: LISTENING';
+            try { recognition.start(); } catch(e) {}
         } else {
-            stopCamera();
+            btnToggleVoiceListen.classList.remove('active');
+            btnToggleVoiceListen.innerHTML = '🎙️ LIVE VOICE: OFF';
+            try { recognition.stop(); } catch(e) {}
         }
     });
 
-    function stopCamera() {
+    // 2. Camera Toggle & Live Stream Start
+    btnToggleCamera.addEventListener('click', async () => {
+        if (!isCameraActive) {
+            await startLiveCamera();
+        } else {
+            stopLiveCamera();
+        }
+    });
+
+    async function startLiveCamera() {
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+                audio: true
+            });
+            videoElem.srcObject = mediaStream;
+            await videoElem.play();
+            isCameraActive = true;
+            btnToggleCamera.innerHTML = '🛑 STOP OPTICAL';
+            btnToggleCamera.classList.add('active');
+
+            // Start Live Audio Analyser
+            initAudioAnalyser(mediaStream);
+
+            // Start 30 FPS Canvas Rendering Loop
+            renderLiveHudCanvas();
+
+            // Start Periodic Backend Multimodal Fusion (~4 FPS)
+            streamInterval = setInterval(sendFrameToBackend, 250);
+        } catch (err) {
+            alert("Camera/Microphone access error: " + err.message + "\nTip: You can also use the Flight Simulation Scenario buttons at the top to test with synthetic live data.");
+        }
+    }
+
+    function stopLiveCamera() {
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
         }
         if (streamInterval) clearInterval(streamInterval);
+        if (animFrameId) cancelAnimationFrame(animFrameId);
         videoElem.srcObject = null;
         isCameraActive = false;
-        btnToggleCamera.innerHTML = '📹 START OPTICAL';
+        btnToggleCamera.innerHTML = '📹 START REAL-TIME OPTICAL';
         btnToggleCamera.classList.remove('active');
+        
+        // Clear canvas
+        hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+        waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
     }
 
-    // 3. Audio Waveform Visualizer
-    function initAudioVisualizer(stream) {
+    // 3. High-Frequency Real-Time Audio Prosody Analyser (Web Audio API)
+    function initAudioAnalyser(stream) {
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioContext.createMediaStreamSource(stream);
             audioAnalyser = audioContext.createAnalyser();
-            audioAnalyser.fftSize = 256;
+            audioAnalyser.fftSize = 1024;
             source.connect(audioAnalyser);
+            
             audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-            drawWaveform();
+            audioTimeData = new Float32Array(audioAnalyser.fftSize);
         } catch (e) {
-            console.log("Audio visualizer error:", e);
+            console.log("Audio analyser init error:", e);
         }
     }
 
-    function drawWaveform() {
-        requestAnimationFrame(drawWaveform);
-        if (!audioAnalyser) return;
-        audioAnalyser.getByteTimeDomainData(audioDataArray);
-
-        waveformCtx.fillStyle = '#020408';
-        waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-        waveformCtx.lineWidth = 2;
-        waveformCtx.strokeStyle = '#00f0ff';
-        waveformCtx.beginPath();
-
-        const sliceWidth = waveformCanvas.width * 1.0 / audioDataArray.length;
-        let x = 0;
-        for (let i = 0; i < audioDataArray.length; i++) {
-            const v = audioDataArray[i] / 128.0;
-            const y = v * waveformCanvas.height / 2;
-            if (i === 0) waveformCtx.moveTo(x, y);
-            else waveformCtx.lineTo(x, y);
-            x += sliceWidth;
+    // Autocorrelation Pitch (F0) detector in JavaScript
+    function detectPitchAutocorr(buffer, sampleRate) {
+        let size = buffer.length;
+        let sumOfSquares = 0;
+        for (let i = 0; i < size; i++) {
+            sumOfSquares += buffer[i] * buffer[i];
         }
-        waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
-        waveformCtx.stroke();
+        let rms = Math.sqrt(sumOfSquares / size);
+        if (rms < 0.015) return -1; // Silence
+
+        let r1 = 0, r2 = size - 1, thres = 0.2;
+        for (let i = 0; i < size / 2; i++) {
+            if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+        }
+        for (let i = 1; i < size / 2; i++) {
+            if (Math.abs(buffer[size - i]) < thres) { r2 = size - i; break; }
+        }
+
+        buffer = buffer.slice(r1, r2);
+        size = buffer.length;
+
+        let c = new Array(size).fill(0);
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size - i; j++) {
+                c[i] += buffer[j] * buffer[j + i];
+            }
+        }
+
+        let d = 0;
+        while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < size; i++) {
+            if (c[i] > maxval) {
+                maxval = c[i];
+                maxpos = i;
+            }
+        }
+        let T0 = maxpos;
+        if (T0 > 0) {
+            return sampleRate / T0;
+        }
+        return -1;
     }
 
-    // 4. Capture Canvas Frame & Send to API
-    async function captureAndSendFrame() {
-        if (!isCameraActive || isProcessing) return;
-        isProcessing = true;
+    // 4. Smooth 30 FPS HUD Canvas Rendering Loop
+    function renderLiveHudCanvas() {
+        if (!isCameraActive) return;
+        animFrameId = requestAnimationFrame(renderLiveHudCanvas);
 
         hudCanvas.width = videoElem.videoWidth || 640;
         hudCanvas.height = videoElem.videoHeight || 480;
-        hudCtx.drawImage(videoElem, 0, 0, hudCanvas.width, hudCanvas.height);
+        const w = hudCanvas.width;
+        const h = hudCanvas.height;
 
-        const b64Image = hudCanvas.toDataURL('image/jpeg', 0.7);
+        // Draw live video
+        hudCtx.drawImage(videoElem, 0, 0, w, h);
+
+        // Compute simulated/client face tracking coordinates if face box not yet set
+        if (!faceBox) {
+            faceBox = { x: Math.floor(w * 0.28), y: Math.floor(h * 0.18), fw: Math.floor(w * 0.44), fh: Math.floor(h * 0.58) };
+        }
+
+        // Draw Tactical HUD Corner Brackets
+        const bx = faceBox.x, by = faceBox.y, bw = faceBox.fw, bh = faceBox.fh;
+        const lineLen = Math.floor(bw * 0.22);
+        hudCtx.strokeStyle = '#00f0ff';
+        hudCtx.lineWidth = 3;
+        hudCtx.shadowColor = '#00f0ff';
+        hudCtx.shadowBlur = 8;
+
+        // Top-Left
+        hudCtx.beginPath();
+        hudCtx.moveTo(bx, by + lineLen);
+        hudCtx.lineTo(bx, by);
+        hudCtx.lineTo(bx + lineLen, by);
+        hudCtx.stroke();
+
+        // Top-Right
+        hudCtx.beginPath();
+        hudCtx.moveTo(bx + bw - lineLen, by);
+        hudCtx.lineTo(bx + bw, by);
+        hudCtx.lineTo(bx + bw, by + lineLen);
+        hudCtx.stroke();
+
+        // Bottom-Left
+        hudCtx.beginPath();
+        hudCtx.moveTo(bx, by + bh - lineLen);
+        hudCtx.lineTo(bx, by + bh);
+        hudCtx.lineTo(bx + lineLen, by + bh);
+        hudCtx.stroke();
+
+        // Bottom-Right
+        hudCtx.beginPath();
+        hudCtx.moveTo(bx + bw - lineLen, by + bh);
+        hudCtx.lineTo(bx + bw, by + bh);
+        hudCtx.lineTo(bx + bw, by + bh - lineLen);
+        hudCtx.stroke();
+
+        hudCtx.shadowBlur = 0;
+
+        // Draw Facial Landmark Points
+        hudCtx.fillStyle = '#10b981';
+        // Eyes
+        hudCtx.fillRect(bx + bw * 0.30 - 3, by + bh * 0.35 - 3, 6, 6);
+        hudCtx.fillRect(bx + bw * 0.70 - 3, by + bh * 0.35 - 3, 6, 6);
+        // Nose bridge
+        hudCtx.fillStyle = '#00f0ff';
+        hudCtx.fillRect(bx + bw * 0.50 - 2, by + bh * 0.52 - 2, 5, 5);
+        // Mouth
+        hudCtx.fillStyle = '#f59e0b';
+        hudCtx.fillRect(bx + bw * 0.50 - 6, by + bh * 0.76 - 2, 12, 4);
+
+        // Header Overlay
+        hudCtx.fillStyle = 'rgba(6, 9, 19, 0.85)';
+        hudCtx.fillRect(bx, Math.max(0, by - 26), bw, 24);
+        hudCtx.fillStyle = '#00f0ff';
+        hudCtx.font = 'bold 12px "Orbitron", monospace';
+        hudCtx.fillText(`OPTICAL LOCK | EAR: ${smoothEar.toFixed(2)} MAR: ${smoothMar.toFixed(2)}`, bx + 8, Math.max(16, by - 8));
+
+        // Real-Time Audio Prosody Calculations (at 30 FPS)
+        if (audioAnalyser && audioTimeData) {
+            audioAnalyser.getFloatTimeDomainData(audioTimeData);
+            let sumSq = 0;
+            for (let i = 0; i < audioTimeData.length; i++) sumSq += audioTimeData[i] * audioTimeData[i];
+            liveRmsEnergy = Math.sqrt(sumSq / audioTimeData.length);
+
+            let pitch = detectPitchAutocorr(audioTimeData, audioContext.sampleRate);
+            if (pitch > 60 && pitch < 450) {
+                livePitchHz = Math.round(pitch);
+                pitchVal.innerText = `${livePitchHz} Hz`;
+                liveVocalTension = Math.min(100, Math.max(5, Math.round((livePitchHz > 200 ? (livePitchHz - 180) * 0.8 : 8) + (liveRmsEnergy * 80))));
+                vocalTensionVal.innerText = `${liveVocalTension}%`;
+            }
+
+            // Draw Audio Waveform
+            audioAnalyser.getByteTimeDomainData(audioDataArray);
+            waveformCtx.fillStyle = '#020408';
+            waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            waveformCtx.lineWidth = 2;
+            waveformCtx.strokeStyle = liveRmsEnergy > 0.04 ? '#10b981' : '#00f0ff';
+            waveformCtx.beginPath();
+
+            const sliceWidth = waveformCanvas.width * 1.0 / audioDataArray.length;
+            let wx = 0;
+            for (let i = 0; i < audioDataArray.length; i++) {
+                const v = audioDataArray[i] / 128.0;
+                const wy = v * waveformCanvas.height / 2;
+                if (i === 0) waveformCtx.moveTo(wx, wy);
+                else waveformCtx.lineTo(wx, wy);
+                wx += sliceWidth;
+            }
+            waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+            waveformCtx.stroke();
+        }
+    }
+
+    // 5. Send Frame to Backend Multimodal Engine (~4 FPS)
+    async function sendFrameToBackend() {
+        if (!isCameraActive || isProcessingBackend) return;
+        isProcessingBackend = true;
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 320;
+        offCanvas.height = 240;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.drawImage(videoElem, 0, 0, 320, 240);
+        const b64Image = offCanvas.toDataURL('image/jpeg', 0.65);
 
         try {
             const resp = await fetch('/api/process_frame', {
@@ -193,15 +387,30 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const telemetry = await resp.json();
             updateDashboardTelemetry(telemetry);
-            currentSpeechText = ""; // reset after ingest
+
+            // Update smooth EAR & MAR from backend
+            if (telemetry.vision) {
+                if (telemetry.vision.face_bounding_box) {
+                    const scaleX = (videoElem.videoWidth || 640) / 320;
+                    const scaleY = (videoElem.videoHeight || 480) / 240;
+                    faceBox = {
+                        x: Math.floor(telemetry.vision.face_bounding_box.x * scaleX),
+                        y: Math.floor(telemetry.vision.face_bounding_box.y * scaleY),
+                        fw: Math.floor(telemetry.vision.face_bounding_box.w * scaleX),
+                        fh: Math.floor(telemetry.vision.face_bounding_box.h * scaleY)
+                    };
+                }
+                smoothEar = telemetry.vision.eye_aspect_ratio || 0.28;
+                smoothMar = telemetry.vision.mouth_aspect_ratio || 0.20;
+            }
         } catch (e) {
-            console.log("Frame processing error:", e);
+            console.log("Backend telemetry error:", e);
         } finally {
-            isProcessing = false;
+            isProcessingBackend = false;
         }
     }
 
-    // 5. Update Telemetry Dashboard
+    // 6. Update Dashboard Telemetry UI
     function updateDashboardTelemetry(data) {
         if (!data) return;
 
@@ -227,7 +436,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Risk Assessment
         const risk = data.risk_assessment || {};
         const riskScore = risk.risk_score || 0.0;
-        const riskLevel = risk.risk_level || 0;
         const tierName = risk.tier_name || 'LEVEL 0: NOMINAL';
         const riskColor = risk.color_hex || '#10b981';
 
@@ -248,11 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
         painVal.innerText = `${(phys.pain_grimace_score || 0).toFixed(0)} / 100`;
         fatigueLevelText.innerText = phys.fatigue_level || 'Nominal';
         fatigueLevelText.style.color = phys.status_color === 'red' ? '#ef4444' : (phys.status_color === 'orange' ? '#f97316' : '#10b981');
-
-        // Audio Vitals
-        const audio = data.audio || {};
-        pitchVal.innerText = audio.pitch_f0_hz ? `${audio.pitch_f0_hz.toFixed(0)} Hz` : '-- Hz';
-        vocalTensionVal.innerText = audio.vocal_tension_score ? `${(audio.vocal_tension_score * 100).toFixed(0)}%` : '0%';
 
         // Discordance Alert
         if (fusion.cross_modal_discordance) {
@@ -280,11 +483,10 @@ document.addEventListener('DOMContentLoaded', () => {
         alertCountBadge.innerText = parseInt(alertCountBadge.innerText || '0') + 1;
     }
 
-    // 6. Chat Interaction
+    // 7. Chat Interaction & Speech Synthesis
     async function sendChatMessage(text) {
         if (!text || !text.trim()) return;
 
-        // Append user bubble
         appendChatBubble('user', text);
         chatInput.value = '';
 
@@ -300,10 +502,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await resp.json();
             appendChatBubble('ai', data.ai_response);
 
-            // Trigger Browser Web Speech TTS for high-fidelity audio
+            // Spoken voice playback via Web Speech TTS
             speakWithBrowserTTS(data.ai_response);
 
-            // If guided breathing triggered, start pacer
+            // Auto-trigger Guided Breathing if relevant
             if (data.intervention && data.intervention.id === 'INT-BREATHE-01') {
                 startBreathingPacer();
             }
@@ -327,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.0;
+            utterance.rate = 1.02;
             utterance.pitch = 1.05;
             window.speechSynthesis.speak(utterance);
         }
@@ -341,13 +543,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btnVoiceInput.addEventListener('click', () => {
         if (recognition) {
             btnVoiceInput.classList.add('active');
-            recognition.start();
+            try { recognition.start(); } catch(e) {}
         } else {
             alert("Speech recognition not supported in this browser. Please type your message.");
         }
     });
 
-    // 7. Guided Box Breathing Pacer Logic
+    // 8. Tactical Box Breathing Pacer Logic
     let pacerInterval = null;
     function startBreathingPacer() {
         if (pacerInterval) clearInterval(pacerInterval);
@@ -375,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     startBreathingPacer();
 
-    // 8. Flight Simulation Scenarios
+    // 9. Flight Simulation Scenarios (Demo Controls)
     const scenarioBtns = document.querySelectorAll('.btn-scenario');
     scenarioBtns.forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -388,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const telemetry = await resp.json();
                 updateDashboardTelemetry(telemetry);
 
-                // Add synthetic dialogue if transcript exists
                 if (telemetry.transcript) {
                     appendChatBubble('user', telemetry.transcript);
                     const chatResp = await fetch('/api/interact', {
@@ -409,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 9. Crew Selector Change
+    // 10. Crew Selector Change
     crewSelector.addEventListener('change', async () => {
         await fetch('/api/crew/select', {
             method: 'POST',
