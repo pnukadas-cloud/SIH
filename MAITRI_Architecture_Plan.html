@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAITRI — Architecture & Implementation Plan</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --code-bg: #f1f5f9;
+            --card-bg: #f8fafc;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 11pt;
+            background: var(--bg);
+        }
+
+        @media print {
+            body { font-size: 10pt; }
+            .page-break { page-break-before: always; }
+            .no-break { page-break-inside: avoid; }
+            @page { margin: 1.5cm 2cm; size: A4; }
+        }
+
+        .container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px 30px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px 30px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
+            color: white;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 12pt;
+            font-weight: 400;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .header .badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .badge-red { background: #ef4444; color: white; }
+        .badge-blue { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); }
+        .badge-yellow { background: #f59e0b; color: #1e293b; }
+
+        /* Sections */
+        h2 {
+            font-size: 16pt;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin: 35px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3 {
+            font-size: 13pt;
+            font-weight: 600;
+            color: var(--text);
+            margin: 25px 0 10px;
+        }
+
+        h4 {
+            font-size: 11pt;
+            font-weight: 600;
+            color: var(--text-light);
+            margin: 15px 0 8px;
+        }
+
+        p { margin: 8px 0; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px;
+            font-size: 9.5pt;
+        }
+
+        thead th {
+            background: var(--primary);
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        thead th:first-child { border-radius: 6px 0 0 0; }
+        thead th:last-child { border-radius: 0 6px 0 0; }
+
+        tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tbody tr:nth-child(even) { background: var(--card-bg); }
+        tbody tr:hover { background: #ede9fe; }
+
+        /* Code blocks */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9pt;
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--primary-dark);
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9pt;
+            line-height: 1.6;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        /* Alert boxes */
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 4px solid;
+            font-size: 10pt;
+        }
+
+        .alert-important {
+            background: #fef3c7;
+            border-color: var(--warning);
+            color: #92400e;
+        }
+
+        .alert-note {
+            background: #dbeafe;
+            border-color: var(--info);
+            color: #1e40af;
+        }
+
+        .alert-tip {
+            background: #d1fae5;
+            border-color: var(--success);
+            color: #065f46;
+        }
+
+        .alert-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        /* Flowchart / Diagram boxes */
+        .diagram {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+
+        .diagram-title {
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-size: 11pt;
+        }
+
+        .flow-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-box {
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 9pt;
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        .flow-arrow {
+            font-size: 16pt;
+            color: var(--text-light);
+        }
+
+        .flow-arrow-down {
+            text-align: center;
+            font-size: 16pt;
+            color: var(--text-light);
+            margin: 4px 0;
+        }
+
+        .bg-indigo { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+        .bg-purple { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+        .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .bg-green { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .bg-orange { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+        .bg-red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .bg-teal { background: #ccfbf1; color: #134e4a; border: 1px solid #99f6e4; }
+        .bg-yellow { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; }
+        .bg-slate { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+
+        /* Risk level indicators */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .risk-card {
+            padding: 14px;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+
+        .risk-0 { background: #d1fae5; border-color: #10b981; }
+        .risk-1 { background: #fef9c3; border-color: #f59e0b; }
+        .risk-2 { background: #ffedd5; border-color: #f97316; }
+        .risk-3 { background: #fee2e2; border-color: #ef4444; }
+
+        .risk-label {
+            font-weight: 700;
+            font-size: 10pt;
+            margin-bottom: 4px;
+        }
+
+        .risk-desc { font-size: 9pt; color: var(--text-light); }
+        .risk-action { font-size: 9pt; font-weight: 500; margin-top: 4px; }
+
+        /* Checklist */
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            padding: 6px 0 6px 28px;
+            position: relative;
+            font-size: 10pt;
+        }
+
+        .checklist li::before {
+            content: '☐';
+            position: absolute;
+            left: 4px;
+            font-size: 12pt;
+        }
+
+        /* JSON block */
+        .json-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8.5pt;
+            line-height: 1.5;
+            margin: 12px 0;
+            overflow-x: auto;
+        }
+
+        .json-key { color: #7dd3fc; }
+        .json-string { color: #86efac; }
+        .json-number { color: #fbbf24; }
+        .json-bool { color: #c084fc; }
+
+        /* Two column layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 12px 0;
+        }
+
+        /* Project structure tree */
+        .tree {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8.5pt;
+            line-height: 1.8;
+            margin: 12px 0;
+        }
+
+        .tree .folder { color: #fbbf24; }
+        .tree .file { color: #7dd3fc; }
+        .tree .comment { color: #64748b; }
+
+        /* Section numbering */
+        .section-num {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 12pt;
+            font-weight: 700;
+            margin-right: 4px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-light);
+            font-size: 9pt;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        ul, ol { padding-left: 20px; margin: 8px 0; }
+        li { margin: 4px 0; }
+
+        strong { font-weight: 600; }
+
+        .highlight { background: #fef3c7; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <h1>🛰️ MAITRI</h1>
+            <div class="subtitle">Multimodal AI Assistant for Psychological & Physical Well-Being of Astronauts</div>
+            <div class="badges">
+                <span class="badge badge-blue">SIH 2025</span>
+                <span class="badge badge-red">HARD</span>
+                <span class="badge badge-blue">Problem ID: 25175</span>
+                <span class="badge badge-yellow">ISRO / Dept. of Space</span>
+            </div>
+        </div>
+
+        <!-- 1. PROBLEM SUMMARY -->
+        <h2><span class="section-num">1</span> Problem Summary</h2>
+        <p>Astronauts aboard the <strong>Bhartiya Antariksh Station (BAS)</strong> face isolation, sleep disruption, tight schedules, and physical discomforts — all of which can trigger serious psychological and physical issues. <strong>MAITRI</strong> is a <strong>standalone, offline, multimodal AI assistant</strong> that:</p>
+        <ol>
+            <li><strong>Detects</strong> emotions via facial expressions + voice tone (audio-video)</li>
+            <li><strong>Provides</strong> short adaptive conversations, psychological companionship & evidence-based interventions</li>
+            <li><strong>Reports</strong> critical emotional/physical states to ground control</li>
+        </ol>
+
+        <div class="alert alert-important">
+            <div class="alert-label">⚠️ Key Constraint</div>
+            The deliverable must be a <strong>trained AI model running on a standalone offline system</strong> (edge computing). No cloud dependency in production.
+        </div>
+
+        <!-- 2. HIGH-LEVEL ARCHITECTURE -->
+        <h2><span class="section-num">2</span> High-Level Architecture</h2>
+
+        <div class="diagram">
+            <div class="diagram-title">End-to-End System Architecture</div>
+            
+            <!-- Input Layer -->
+            <div class="flow-row">
+                <div class="flow-box bg-indigo">🎥 Camera Feed<br><small>Video Stream</small></div>
+                <div class="flow-box bg-indigo">🎤 Microphone Feed<br><small>Audio Stream</small></div>
+            </div>
+            <div class="flow-arrow-down">▼</div>
+
+            <!-- Preprocessing -->
+            <div class="flow-row">
+                <div class="flow-box bg-purple">Face Detection<br>& Tracking</div>
+                <div class="flow-box bg-purple">Voice Activity<br>Detection</div>
+                <div class="flow-box bg-purple">Speech-to-Text<br>(Whisper)</div>
+            </div>
+            <div class="flow-arrow-down">▼</div>
+
+            <!-- Analysis Engine -->
+            <div class="flow-row">
+                <div class="flow-box bg-blue">Facial Emotion<br>Recognition</div>
+                <div class="flow-box bg-blue">Speech Emotion<br>Recognition</div>
+                <div class="flow-box bg-blue">Text Sentiment<br>Analysis</div>
+            </div>
+            <div class="flow-arrow-down">▼</div>
+
+            <!-- Fusion -->
+            <div class="flow-row">
+                <div class="flow-box bg-teal" style="min-width: 280px;">🔀 Multimodal Fusion Module<br><small>Attention-weighted late fusion</small></div>
+            </div>
+            <div class="flow-arrow-down">▼</div>
+
+            <!-- Decision Engine -->
+            <div class="flow-row">
+                <div class="flow-box bg-orange">Emotion State<br>Tracker</div>
+                <div class="flow-box bg-orange">Risk Scoring &<br>Thresholds</div>
+                <div class="flow-box bg-orange">Context Memory<br>(Session History)</div>
+            </div>
+            <div class="flow-arrow-down">▼</div>
+
+            <!-- Response Engine -->
+            <div class="flow-row">
+                <div class="flow-box bg-green">💬 Local LLM<br>(Conversational AI)</div>
+                <div class="flow-box bg-green">📋 Intervention<br>Selector</div>
+                <div class="flow-box bg-green">🔊 Text-to-Speech<br>(Offline TTS)</div>
+            </div>
+            <div class="flow-arrow-down">▼</div>
+
+            <!-- Output Layer -->
+            <div class="flow-row">
+                <div class="flow-box bg-slate">🔊 Audio<br>Response</div>
+                <div class="flow-box bg-slate">🖥️ Local<br>Dashboard</div>
+                <div class="flow-box bg-slate">📡 Ground Station<br>Alerts</div>
+                <div class="flow-box bg-slate">📝 Session<br>Logs</div>
+            </div>
+        </div>
+
+        <!-- 3. MODULE BREAKDOWN -->
+        <div class="page-break"></div>
+        <h2><span class="section-num">3</span> Module-by-Module Breakdown</h2>
+
+        <h3>3.1 Input Layer</h3>
+        <table>
+            <thead><tr><th>Component</th><th>Purpose</th><th>Technology</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Camera Feed</strong></td><td>Continuous video capture of astronaut's face</td><td>OpenCV VideoCapture, USB/IP Camera</td></tr>
+                <tr><td><strong>Microphone Feed</strong></td><td>Continuous audio capture of astronaut's voice</td><td>PyAudio / sounddevice</td></tr>
+            </tbody>
+        </table>
+        <div class="alert alert-note">
+            <div class="alert-label">📝 Note</div>
+            Feeds are processed in real-time with frame-level and chunk-level buffering. Video at ~15 FPS (sufficient for FER), audio at 16kHz mono.
+        </div>
+
+        <h3>3.2 Preprocessing Pipeline</h3>
+        <table>
+            <thead><tr><th>Component</th><th>What it does</th><th>Model / Library</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Face Detection & Tracking</strong></td><td>Locates and tracks face across frames</td><td>MediaPipe Face Mesh / MTCNN / RetinaFace</td></tr>
+                <tr><td><strong>Facial Landmark Extraction</strong></td><td>Extracts 468 landmarks for AU detection</td><td>MediaPipe / dlib 68-point</td></tr>
+                <tr><td><strong>Voice Activity Detection</strong></td><td>Filters silence, isolates speech segments</td><td>Silero VAD (lightweight, offline)</td></tr>
+                <tr><td><strong>Audio Feature Extraction</strong></td><td>Extracts MFCCs, Mel-spectrograms, pitch, energy</td><td>Librosa / torchaudio</td></tr>
+                <tr><td><strong>Speech-to-Text</strong></td><td>Transcribes speech for NLP analysis</td><td>OpenAI Whisper (tiny/base — offline)</td></tr>
+            </tbody>
+        </table>
+
+        <h3>3.3 Multimodal Analysis Engine (Core AI)</h3>
+        <p>This is the heart of MAITRI — three parallel emotion recognition streams fused into a unified emotional state.</p>
+
+        <h4>3.3.1 Facial Emotion Recognition (FER)</h4>
+        <pre><code>Input:   Cropped face frames (48×48 or 224×224)
+Model:   Fine-tuned MobileNetV2 / EfficientNet-Lite / Custom CNN
+Output:  Probabilities over 7 emotions
+         [Happy, Sad, Angry, Fear, Surprise, Disgust, Neutral]
+Dataset: FER2013, AffectNet, RAF-DB</code></pre>
+
+        <h4>3.3.2 Speech Emotion Recognition (SER)</h4>
+        <pre><code>Input:   Mel-spectrograms / MFCC features from audio chunks (2-5s)
+Model:   CNN-LSTM hybrid / HuBERT-tiny fine-tuned
+Output:  Probabilities over emotions
+         [Happy, Sad, Angry, Fear, Neutral, Stressed, Fatigued]
+Dataset: RAVDESS, CREMA-D, IEMOCAP, EMO-DB</code></pre>
+
+        <h4>3.3.3 Text Sentiment Analysis</h4>
+        <pre><code>Input:   Transcribed text from Whisper STT
+Model:   DistilBERT / TinyBERT fine-tuned for sentiment + emotion
+Output:  Sentiment (Positive/Negative/Neutral) + Emotion labels
+Dataset: GoEmotions, EmoInt, custom astronaut dialogue corpus</code></pre>
+
+        <h4>3.3.4 Multimodal Fusion Module</h4>
+        <pre><code>Strategy: Late Fusion with Attention-weighted aggregation
+
+Fusion Formula:
+  E_final = α·E_face + β·E_voice + γ·E_text
+
+  Where α, β, γ are learned attention weights
+  (or confidence-weighted based on input quality)
+
+Conflict Resolution:
+  - If face says "happy" but voice says "stressed" →
+    voice gets higher weight (harder to mask)
+  - Missing modality graceful degradation
+    (e.g., face not visible → rely on audio+text)</code></pre>
+
+        <h4>3.3.5 Physical Distress Detector</h4>
+        <table>
+            <thead><tr><th>Signal</th><th>Detection Method</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Fatigue</strong></td><td>Yawning detection (mouth aspect ratio), eye blink rate, droopy eyelids</td></tr>
+                <tr><td><strong>Pain / Discomfort</strong></td><td>Facial Action Units (AU4, AU6, AU7, AU9, AU10, AU43)</td></tr>
+                <tr><td><strong>Sleep Deprivation</strong></td><td>Microsleep detection (prolonged eye closure), response latency</td></tr>
+                <tr><td><strong>Stress</strong></td><td>Voice jitter, pitch variability, speech rate changes</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 3.4 Decision Engine -->
+        <div class="page-break"></div>
+        <h3>3.4 Decision & State Engine</h3>
+
+        <h4>3.4.1 Emotion State Tracker</h4>
+        <p>Maintains a <strong>rolling temporal profile</strong> of the astronaut's emotional state:</p>
+        <pre><code>EmotionState:
+  current_emotion:   "stressed"
+  confidence:        0.82
+  duration_in_state: "00:14:32"
+  trend:             "worsening"   # stable / improving / worsening
+  history:           [last 24h rolling window]
+  baseline:          {personal average emotional profile}</code></pre>
+
+        <h4>3.4.2 Risk Scoring & Escalation Levels</h4>
+        <div class="risk-grid">
+            <div class="risk-card risk-0">
+                <div class="risk-label">🟢 Level 0: Normal (Score 0–30)</div>
+                <div class="risk-desc">Astronaut shows stable, healthy emotional baseline</div>
+                <div class="risk-action">→ Passive monitoring, log only</div>
+            </div>
+            <div class="risk-card risk-1">
+                <div class="risk-label">🟡 Level 1: Mild Concern (Score 31–50)</div>
+                <div class="risk-desc">Slight emotional deviation detected</div>
+                <div class="risk-action">→ Proactive check-in, gentle conversation</div>
+            </div>
+            <div class="risk-card risk-2">
+                <div class="risk-label">🟠 Level 2: Moderate Risk (Score 51–70)</div>
+                <div class="risk-desc">Sustained negative state or physical distress</div>
+                <div class="risk-action">→ Active intervention + Alert ground station</div>
+            </div>
+            <div class="risk-card risk-3">
+                <div class="risk-label">🔴 Level 3: Critical (Score 71–100)</div>
+                <div class="risk-desc">Severe emotional distress or crisis indicators</div>
+                <div class="risk-action">→ Emergency: Immediate ground notification + Crisis protocol</div>
+            </div>
+        </div>
+
+        <p><strong>Risk Score Formula:</strong></p>
+        <pre><code>risk_score = w1 × emotion_severity
+           + w2 × duration_factor
+           + w3 × trend_factor
+           + w4 × physical_distress_score
+           + w5 × context_modifier (time of day, mission phase, etc.)</code></pre>
+
+        <h4>3.4.3 Context Memory</h4>
+        <ul>
+            <li><strong>Short-term:</strong> Current conversation session (what was discussed, astronaut's responses)</li>
+            <li><strong>Long-term:</strong> SQLite database with historical emotion logs, intervention history, personal preferences</li>
+            <li><strong>Astronaut Profile:</strong> Baseline mood patterns, known triggers, preferred coping strategies</li>
+        </ul>
+
+        <!-- 3.5 Response Engine -->
+        <h3>3.5 Response Engine</h3>
+
+        <h4>3.5.1 Conversational AI (Local LLM Options)</h4>
+        <table>
+            <thead><tr><th>Option</th><th>Model Size</th><th>Suitability</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Phi-3 Mini (3.8B)</strong></td><td>~2.5 GB quantized</td><td>⭐ Best balance of quality + edge performance</td></tr>
+                <tr><td><strong>Gemma 2B</strong></td><td>~1.5 GB quantized</td><td>Lighter alternative</td></tr>
+                <tr><td><strong>Llama 3.2 3B</strong></td><td>~2 GB quantized</td><td>Strong general capability</td></tr>
+                <tr><td><strong>TinyLlama 1.1B</strong></td><td>~700 MB quantized</td><td>Ultra-lightweight fallback</td></tr>
+            </tbody>
+        </table>
+
+        <p><strong>System Prompt Strategy:</strong></p>
+        <pre><code>You are MAITRI, a compassionate AI companion for astronauts aboard
+the Bhartiya Antariksh Station. Your role is to:
+- Provide warm, empathetic psychological support
+- Keep conversations short and situation-relevant
+- Use evidence-based therapeutic techniques (CBT, mindfulness, etc.)
+- Never diagnose — support and escalate when needed
+- Be culturally sensitive and adapt to the astronaut's preferences
+
+Current astronaut emotional state: {emotion_state}
+Risk level: {risk_level}
+Suggested intervention: {intervention_type}
+Conversation history: {recent_context}</code></pre>
+
+        <h4>3.5.2 Evidence-Based Intervention Selector</h4>
+        <table>
+            <thead><tr><th>Emotion State</th><th>Intervention Type</th><th>Example Response</th></tr></thead>
+            <tbody>
+                <tr><td>Anxious / Stressed</td><td>Breathing exercises, grounding</td><td>"Let's try box breathing — inhale for 4..."</td></tr>
+                <tr><td>Sad / Lonely</td><td>Empathetic listening, reminiscence</td><td>"Would you like to talk about what's on your mind?"</td></tr>
+                <tr><td>Angry / Frustrated</td><td>De-escalation, cognitive reframing</td><td>"That sounds frustrating. Let's break it down..."</td></tr>
+                <tr><td>Fatigued</td><td>Sleep hygiene, micro-rest guidance</td><td>"A 10-min power nap could help. Shall I set a timer?"</td></tr>
+                <tr><td>Normal (proactive)</td><td>Casual check-in, encouragement</td><td>"How's the experiment going? You're doing great work."</td></tr>
+            </tbody>
+        </table>
+
+        <div class="alert alert-tip">
+            <div class="alert-label">💡 Tip</div>
+            Interventions are stored in a structured JSON knowledge base with tags, so the system can retrieve contextually relevant responses without internet.
+        </div>
+
+        <h4>3.5.3 Text-to-Speech (Offline)</h4>
+        <table>
+            <thead><tr><th>Option</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Piper TTS</strong></td><td>Fast, offline, multiple voices, ONNX-based</td></tr>
+                <tr><td><strong>Coqui TTS</strong></td><td>Higher quality, slightly heavier</td></tr>
+                <tr><td><strong>eSpeak-NG</strong></td><td>Ultra-lightweight fallback</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 4. DEPLOYMENT -->
+        <div class="page-break"></div>
+        <h2><span class="section-num">4</span> Edge Deployment Architecture</h2>
+
+        <div class="diagram">
+            <div class="diagram-title">Deployment View — Standalone Edge System</div>
+            <div class="two-col">
+                <div>
+                    <div class="flow-box bg-indigo" style="margin-bottom: 10px; text-align: left;">
+                        <strong>🖥️ Edge Device (Standalone)</strong><br>
+                        <hr style="border-color: #c7d2fe; margin: 6px 0;">
+                        <strong>Hardware:</strong><br>
+                        • NVIDIA Jetson Orin / RTX GPU<br>
+                        • x86/ARM CPU<br>
+                        • SSD Storage (256GB+)<br>
+                        • Camera + Microphone<br>
+                        <hr style="border-color: #c7d2fe; margin: 6px 0;">
+                        <strong>Software:</strong><br>
+                        • Ubuntu 22.04 LTS<br>
+                        • Python 3.10 + ONNX Runtime<br>
+                        • llama.cpp (LLM inference)<br>
+                        • FastAPI Backend<br>
+                        • HTML/JS Dashboard<br>
+                        • SQLite Database
+                    </div>
+                </div>
+                <div>
+                    <div class="flow-box bg-green" style="margin-bottom: 10px; text-align: left;">
+                        <strong>🌍 Ground Station</strong><br>
+                        <hr style="border-color: #a7f3d0; margin: 6px 0;">
+                        • Alert Receiver<br>
+                        • Mission Control Dashboard<br>
+                        • Post-Mission Analytics<br>
+                        <hr style="border-color: #a7f3d0; margin: 6px 0;">
+                        <em>Connected via queued alerts<br>(when comm window available)</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Hardware Requirements</h3>
+        <table>
+            <thead><tr><th>Component</th><th>Minimum</th><th>Recommended</th></tr></thead>
+            <tbody>
+                <tr><td><strong>GPU</strong></td><td>NVIDIA Jetson Orin Nano (8GB)</td><td>NVIDIA Jetson AGX Orin (32GB)</td></tr>
+                <tr><td><strong>CPU</strong></td><td>ARM Cortex-A78AE / Intel i5</td><td>12-core ARM / Intel i7</td></tr>
+                <tr><td><strong>RAM</strong></td><td>16 GB</td><td>32 GB</td></tr>
+                <tr><td><strong>Storage</strong></td><td>128 GB SSD</td><td>256 GB SSD</td></tr>
+                <tr><td><strong>Camera</strong></td><td>720p USB</td><td>1080p with IR (low-light)</td></tr>
+                <tr><td><strong>Microphone</strong></td><td>USB microphone</td><td>Noise-cancelling array mic</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 5. DATA PIPELINE -->
+        <h2><span class="section-num">5</span> Data Processing Flow</h2>
+        <div class="diagram">
+            <div class="diagram-title">Sequence: From Astronaut Interaction to Response</div>
+            <table style="font-size: 9pt;">
+                <thead><tr><th>Step</th><th>Component</th><th>Action</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>📷 Camera + 🎤 Microphone</td><td>Capture video frames (15 FPS) + audio chunks (2-5s) in parallel</td></tr>
+                    <tr><td>2</td><td>⚙️ Preprocessor</td><td>Face detection, landmark extraction, VAD, MFCC extraction, STT transcription</td></tr>
+                    <tr><td>3</td><td>🧠 Analysis Engine</td><td>Run FER, SER, and Sentiment analysis in parallel</td></tr>
+                    <tr><td>4</td><td>🔀 Fusion Module</td><td>Attention-weighted fusion of all three modalities</td></tr>
+                    <tr><td>5</td><td>📊 Decision Engine</td><td>Update emotion state tracker, compute risk score</td></tr>
+                    <tr><td>6</td><td>⚡ Escalation Check</td><td>If Risk Level ≥ 2 → Queue ground station alert</td></tr>
+                    <tr><td>7</td><td>💬 Response Engine</td><td>Generate contextual response via LLM + intervention selector</td></tr>
+                    <tr><td>8</td><td>🔊 TTS Output</td><td>Convert response to speech and deliver to astronaut</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 6. PROJECT STRUCTURE -->
+        <div class="page-break"></div>
+        <h2><span class="section-num">6</span> Project Structure</h2>
+        <div class="tree">
+<span class="folder">MAITRI/</span>
+├── <span class="folder">data/</span>
+│   ├── <span class="folder">datasets/</span>              <span class="comment"># Training datasets (FER2013, RAVDESS, etc.)</span>
+│   ├── <span class="folder">interventions/</span>         <span class="comment"># JSON knowledge base of interventions</span>
+│   └── <span class="folder">profiles/</span>              <span class="comment"># Astronaut baseline profiles</span>
+│
+├── <span class="folder">models/</span>
+│   ├── <span class="folder">fer/</span>                   <span class="comment"># Facial Emotion Recognition model</span>
+│   ├── <span class="folder">ser/</span>                   <span class="comment"># Speech Emotion Recognition model</span>
+│   ├── <span class="folder">sentiment/</span>             <span class="comment"># Text sentiment model</span>
+│   ├── <span class="folder">whisper/</span>               <span class="comment"># Whisper STT model weights</span>
+│   ├── <span class="folder">llm/</span>                   <span class="comment"># Local LLM weights (quantized)</span>
+│   └── <span class="folder">tts/</span>                   <span class="comment"># TTS model weights</span>
+│
+├── <span class="folder">src/</span>
+│   ├── <span class="folder">input/</span>
+│   │   ├── <span class="file">camera.py</span>          <span class="comment"># Video capture & frame buffering</span>
+│   │   └── <span class="file">microphone.py</span>      <span class="comment"># Audio capture & chunking</span>
+│   │
+│   ├── <span class="folder">preprocessing/</span>
+│   │   ├── <span class="file">face_detector.py</span>   <span class="comment"># Face detection & landmark extraction</span>
+│   │   ├── <span class="file">audio_processor.py</span> <span class="comment"># VAD, MFCC, spectrogram extraction</span>
+│   │   └── <span class="file">transcriber.py</span>     <span class="comment"># Whisper STT wrapper</span>
+│   │
+│   ├── <span class="folder">analysis/</span>
+│   │   ├── <span class="file">fer_model.py</span>       <span class="comment"># Facial emotion recognition</span>
+│   │   ├── <span class="file">ser_model.py</span>       <span class="comment"># Speech emotion recognition</span>
+│   │   ├── <span class="file">sentiment.py</span>       <span class="comment"># Text sentiment analysis</span>
+│   │   ├── <span class="file">fusion.py</span>          <span class="comment"># Multimodal fusion module</span>
+│   │   └── <span class="file">physical.py</span>        <span class="comment"># Physical distress detection</span>
+│   │
+│   ├── <span class="folder">decision/</span>
+│   │   ├── <span class="file">state_tracker.py</span>   <span class="comment"># Emotion state management</span>
+│   │   ├── <span class="file">risk_scorer.py</span>     <span class="comment"># Risk level computation</span>
+│   │   └── <span class="file">context_memory.py</span>  <span class="comment"># Session & long-term memory</span>
+│   │
+│   ├── <span class="folder">response/</span>
+│   │   ├── <span class="file">conversation.py</span>    <span class="comment"># LLM conversation manager</span>
+│   │   ├── <span class="file">interventions.py</span>   <span class="comment"># Evidence-based intervention selector</span>
+│   │   └── <span class="file">tts_engine.py</span>      <span class="comment"># Text-to-speech wrapper</span>
+│   │
+│   ├── <span class="folder">output/</span>
+│   │   ├── <span class="file">dashboard.py</span>       <span class="comment"># Local web dashboard (FastAPI)</span>
+│   │   ├── <span class="file">ground_alert.py</span>    <span class="comment"># Ground station alert queue</span>
+│   │   └── <span class="file">logger.py</span>          <span class="comment"># Session logging & analytics</span>
+│   │
+│   ├── <span class="file">pipeline.py</span>            <span class="comment"># Main orchestration pipeline</span>
+│   └── <span class="file">config.py</span>              <span class="comment"># Configuration & constants</span>
+│
+├── <span class="folder">frontend/</span>
+│   ├── <span class="file">index.html</span>             <span class="comment"># Dashboard UI</span>
+│   ├── <span class="file">styles.css</span>             <span class="comment"># Dashboard styling</span>
+│   └── <span class="file">app.js</span>                 <span class="comment"># Dashboard logic (charts, real-time)</span>
+│
+├── <span class="folder">tests/</span>
+├── <span class="folder">scripts/</span>
+├── <span class="file">requirements.txt</span>
+├── <span class="file">Dockerfile</span>
+└── <span class="file">README.md</span>
+        </div>
+
+        <!-- 7. TECH STACK -->
+        <h2><span class="section-num">7</span> Tech Stack Summary</h2>
+        <table>
+            <thead><tr><th>Layer</th><th>Technology</th><th>Justification</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Language</strong></td><td>Python 3.10+</td><td>Best ML/AI ecosystem</td></tr>
+                <tr><td><strong>Video Processing</strong></td><td>OpenCV, MediaPipe</td><td>Lightweight, real-time</td></tr>
+                <tr><td><strong>Audio Processing</strong></td><td>Librosa, torchaudio, Silero VAD</td><td>Industry standard, offline</td></tr>
+                <tr><td><strong>STT</strong></td><td>Whisper (tiny/base)</td><td>State-of-the-art, runs offline</td></tr>
+                <tr><td><strong>FER Model</strong></td><td>MobileNetV2 / EfficientNet-Lite</td><td>Lightweight for edge</td></tr>
+                <tr><td><strong>SER Model</strong></td><td>CNN-LSTM / HuBERT-tiny</td><td>Proven on emotion datasets</td></tr>
+                <tr><td><strong>Sentiment</strong></td><td>DistilBERT / TinyBERT</td><td>Small footprint, fast</td></tr>
+                <tr><td><strong>Fusion</strong></td><td>Custom attention-weighted</td><td>Handles missing modalities</td></tr>
+                <tr><td><strong>Local LLM</strong></td><td>Phi-3 Mini (3.8B, Q4)</td><td>Best quality-to-size for edge</td></tr>
+                <tr><td><strong>LLM Runtime</strong></td><td>llama.cpp / ONNX Runtime</td><td>Optimized CPU+GPU inference</td></tr>
+                <tr><td><strong>TTS</strong></td><td>Piper TTS</td><td>Fast, offline, natural</td></tr>
+                <tr><td><strong>Backend</strong></td><td>FastAPI</td><td>Async, WebSocket support</td></tr>
+                <tr><td><strong>Frontend</strong></td><td>HTML/CSS/JS + Chart.js</td><td>No build step needed</td></tr>
+                <tr><td><strong>Database</strong></td><td>SQLite</td><td>Zero-config, embedded</td></tr>
+                <tr><td><strong>Model Format</strong></td><td>ONNX / GGUF (LLM)</td><td>Cross-platform, optimized</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 8. TRAINING -->
+        <div class="page-break"></div>
+        <h2><span class="section-num">8</span> Training Strategy</h2>
+
+        <h3>8.1 Datasets</h3>
+        <table>
+            <thead><tr><th>Task</th><th>Dataset</th><th>Size</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>FER</td><td>FER2013</td><td>35K images</td><td>Baseline</td></tr>
+                <tr><td>FER</td><td>AffectNet</td><td>450K images</td><td>Larger, higher quality</td></tr>
+                <tr><td>FER</td><td>RAF-DB</td><td>30K images</td><td>Real-world, diverse</td></tr>
+                <tr><td>SER</td><td>RAVDESS</td><td>7,356 clips</td><td>Clean, acted</td></tr>
+                <tr><td>SER</td><td>CREMA-D</td><td>7,442 clips</td><td>Diverse demographics</td></tr>
+                <tr><td>SER</td><td>IEMOCAP</td><td>12 hours</td><td>Conversational, natural</td></tr>
+                <tr><td>Sentiment</td><td>GoEmotions</td><td>58K texts</td><td>27 emotion categories</td></tr>
+                <tr><td>Physical</td><td>YawDD</td><td>322 videos</td><td>Yawning / drowsiness</td></tr>
+            </tbody>
+        </table>
+
+        <h3>8.2 Training Pipeline</h3>
+        <div class="diagram">
+            <div class="flow-row">
+                <div class="flow-box bg-indigo">📦 Datasets</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box bg-purple">🔄 Augmentation<br><small>rotation, noise, speed</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box bg-blue">🏋️ Training<br><small>PyTorch</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box bg-green">📈 Evaluation<br><small>Accuracy, F1</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box bg-orange">⚡ Optimization<br><small>Quantization</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box bg-teal">🚀 Deploy<br><small>ONNX Export</small></div>
+            </div>
+        </div>
+
+        <!-- 9. INTERACTION MODES -->
+        <h2><span class="section-num">9</span> Interaction Modes</h2>
+        <div class="risk-grid">
+            <div class="risk-card" style="background: #dbeafe; border-color: #3b82f6;">
+                <div class="risk-label">👁️ Passive Monitoring (Always On)</div>
+                <div class="risk-desc">Camera + mic continuously capture. Emotion analysis runs in background. Dashboard updates in real-time. No astronaut interaction required.</div>
+            </div>
+            <div class="risk-card" style="background: #d1fae5; border-color: #10b981;">
+                <div class="risk-label">💬 Proactive Check-in (System Initiated)</div>
+                <div class="risk-desc">Triggered when risk score crosses threshold or at scheduled intervals. MAITRI initiates: "Hey, I noticed you seem a bit tense..."</div>
+            </div>
+            <div class="risk-card" style="background: #ede9fe; border-color: #8b5cf6;">
+                <div class="risk-label">🗣️ Reactive Support (Astronaut Initiated)</div>
+                <div class="risk-desc">Astronaut says "MAITRI" (wake word) or presses button. Full conversational mode activated.</div>
+            </div>
+            <div class="risk-card" style="background: #fee2e2; border-color: #ef4444;">
+                <div class="risk-label">🚨 Crisis Mode (Emergency)</div>
+                <div class="risk-desc">Triggered at Risk Level 3. Immediate ground alert, crisis de-escalation protocol, continuous monitoring until state improves.</div>
+            </div>
+        </div>
+
+        <!-- 10. GROUND STATION ALERT -->
+        <h2><span class="section-num">10</span> Ground Station Alert Format</h2>
+        <div class="json-block">{
+  <span class="json-key">"alert_id"</span>: <span class="json-string">"MAITRI-2025-08-28-001"</span>,
+  <span class="json-key">"timestamp"</span>: <span class="json-string">"2025-08-28T14:32:00Z"</span>,
+  <span class="json-key">"astronaut_id"</span>: <span class="json-string">"CREW-01"</span>,
+  <span class="json-key">"risk_level"</span>: <span class="json-number">3</span>,
+  <span class="json-key">"risk_score"</span>: <span class="json-number">78</span>,
+  <span class="json-key">"emotional_state"</span>: {
+    <span class="json-key">"primary"</span>: <span class="json-string">"distressed"</span>,
+    <span class="json-key">"confidence"</span>: <span class="json-number">0.85</span>,
+    <span class="json-key">"duration_minutes"</span>: <span class="json-number">45</span>,
+    <span class="json-key">"trend"</span>: <span class="json-string">"worsening"</span>
+  },
+  <span class="json-key">"physical_state"</span>: {
+    <span class="json-key">"fatigue_level"</span>: <span class="json-string">"high"</span>,
+    <span class="json-key">"sleep_quality_24h"</span>: <span class="json-string">"poor"</span>,
+    <span class="json-key">"pain_indicators"</span>: <span class="json-bool">false</span>
+  },
+  <span class="json-key">"intervention_attempted"</span>: {
+    <span class="json-key">"type"</span>: <span class="json-string">"breathing_exercise"</span>,
+    <span class="json-key">"response"</span>: <span class="json-string">"partially_engaged"</span>,
+    <span class="json-key">"effectiveness"</span>: <span class="json-number">0.3</span>
+  },
+  <span class="json-key">"recommended_action"</span>: <span class="json-string">"Schedule counseling session with ground psychologist"</span>
+}</div>
+
+        <!-- 11. DIFFERENTIATORS -->
+        <h2><span class="section-num">11</span> Key Differentiators</h2>
+        <table>
+            <thead><tr><th>Feature</th><th>Why It Matters</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Multimodal Fusion with graceful degradation</strong></td><td>Works even if camera is blocked or mic is noisy</td></tr>
+                <tr><td><strong>Temporal emotion tracking</strong></td><td>Detects prolonged states, not just snapshots</td></tr>
+                <tr><td><strong>Evidence-based interventions</strong></td><td>Uses CBT, mindfulness, grounding — not just chatting</td></tr>
+                <tr><td><strong>Fully offline</strong></td><td>Zero latency, works in space with no connectivity</td></tr>
+                <tr><td><strong>Astronaut personalization</strong></td><td>Learns individual baselines and preferences over time</td></tr>
+                <tr><td><strong>Physical + Psychological</strong></td><td>Detects fatigue, pain, sleep issues — not just emotions</td></tr>
+                <tr><td><strong>4-tier risk escalation</strong></td><td>Proportional response from passive to emergency</td></tr>
+                <tr><td><strong>Ground station integration</strong></td><td>Structured alerts for mission control psychologists</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 12. DEVELOPMENT PHASES -->
+        <div class="page-break"></div>
+        <h2><span class="section-num">12</span> Development Phases (Hackathon Timeline)</h2>
+
+        <h3>Phase 1: Foundation — Day 1, First Half</h3>
+        <ul class="checklist">
+            <li>Set up project structure & environment</li>
+            <li>Implement camera + microphone input capture</li>
+            <li>Face detection + landmark extraction pipeline</li>
+            <li>Audio preprocessing (VAD, MFCC extraction)</li>
+        </ul>
+
+        <h3>Phase 2: Core AI Models — Day 1, Second Half</h3>
+        <ul class="checklist">
+            <li>Train / fine-tune FER model on FER2013/AffectNet</li>
+            <li>Train / fine-tune SER model on RAVDESS/CREMA-D</li>
+            <li>Integrate Whisper for STT</li>
+            <li>Implement text sentiment analysis</li>
+        </ul>
+
+        <h3>Phase 3: Fusion & Decision — Day 2, First Half</h3>
+        <ul class="checklist">
+            <li>Build multimodal fusion module</li>
+            <li>Implement emotion state tracker</li>
+            <li>Build risk scoring system</li>
+            <li>Physical distress detection (fatigue, yawning)</li>
+        </ul>
+
+        <h3>Phase 4: Response & Conversation — Day 2, Second Half</h3>
+        <ul class="checklist">
+            <li>Set up local LLM (Phi-3 Mini quantized)</li>
+            <li>Build intervention knowledge base</li>
+            <li>Implement conversation manager with context</li>
+            <li>Integrate Piper TTS for spoken responses</li>
+        </ul>
+
+        <h3>Phase 5: Integration & UI — Day 3, First Half</h3>
+        <ul class="checklist">
+            <li>Build real-time dashboard (emotion trends, risk levels)</li>
+            <li>End-to-end pipeline integration</li>
+            <li>Ground station alert system</li>
+            <li>Session logging</li>
+        </ul>
+
+        <h3>Phase 6: Polish & Demo — Day 3, Second Half</h3>
+        <ul class="checklist">
+            <li>Testing & bug fixes</li>
+            <li>Performance optimization for edge</li>
+            <li>Demo preparation & presentation</li>
+            <li>Documentation</li>
+        </ul>
+
+        <!-- 13. EVALUATION METRICS -->
+        <h2><span class="section-num">13</span> Evaluation Metrics</h2>
+        <table>
+            <thead><tr><th>Metric</th><th>Target</th><th>Measurement</th></tr></thead>
+            <tbody>
+                <tr><td><strong>FER Accuracy</strong></td><td>≥ 70% on 7-class</td><td>Test set accuracy + F1</td></tr>
+                <tr><td><strong>SER Accuracy</strong></td><td>≥ 65% on 6-class</td><td>Test set accuracy + F1</td></tr>
+                <tr><td><strong>Fusion Accuracy</strong></td><td>≥ 75% combined</td><td>Cross-modal validation</td></tr>
+                <tr><td><strong>Response Latency</strong></td><td>&lt; 3 seconds E2E</td><td>Time from detection to speech</td></tr>
+                <tr><td><strong>False Alert Rate</strong></td><td>&lt; 10%</td><td>Incorrect escalations</td></tr>
+                <tr><td><strong>Conversation Quality</strong></td><td>Subjective eval</td><td>Empathy, relevance, helpfulness</td></tr>
+                <tr><td><strong>System Uptime</strong></td><td>99%+ continuous</td><td>Stress test over 24 hours</td></tr>
+            </tbody>
+        </table>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <strong>MAITRI — Architecture & Implementation Plan</strong><br>
+            SIH 2025 · Problem ID 25175 · ISRO / Department of Space<br>
+            Generated: August 2025 · Confidential
+        </div>
+
+    </div>
+</body>
+</html>
