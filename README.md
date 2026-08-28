@@ -58,9 +58,6 @@ llama.cpp | Piper TTS | FastAPI | SQLite
 | 🟠 2 | 51–70 | Intervention + ground alert |
 | 🔴 3 | 71–100 | Crisis protocol |
 
-## 📁 Project Structure
-
-[Condensed folder tree]
 
 ## ⚙️ Installation
 
