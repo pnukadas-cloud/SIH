@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAITRI — Spacecraft Well-Being HUD | ISRO BAS</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+</head>
+<body>
+
+    <!-- TOP NAVIGATION & ORBITAL STATUS BAR -->
+    <header class="top-navbar">
+        <div class="brand-section">
+            <div class="brand-logo">
+                <span>🛰️</span> MAITRI
+            </div>
+            <div class="brand-sub">
+                MULTIMODAL AI COMPANION | BHARTIYA ANTARIKSH STATION
+            </div>
+        </div>
+
+        <div class="station-telemetry-badge">
+            <div class="status-dot"></div>
+            <span>ORBIT: 410 KM LEO</span>
+            <span>|</span>
+            <span>LIFE SUPPORT: 101.3 kPa (NOMINAL)</span>
+            <span>|</span>
+            <span>ISRO ISTRAC LINK: ACTIVE</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="crew-selector" style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--cyan-hud);">CREW LOCK:</label>
+            <select id="crew-selector" style="background: #0b1120; color: #00f0ff; border: 1px solid var(--border-glass-strong); padding: 5px 10px; border-radius: 6px; font-family: var(--font-body); font-weight: 600;">
+                {% for crew in crew_profiles %}
+                <option value="{{ crew.astronaut_id }}" {% if crew.astronaut_id == active_astronaut.astronaut_id %}selected{% endif %}>
+                    {{ crew.callsign }} ({{ crew.name }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD -->
+    <main class="dashboard-grid">
+
+        <!-- SIMULATION SCENARIO QUICK-TRIGGER BAR -->
+        <div class="scenario-bar">
+            <div class="scenario-title">
+                <span>⚡</span> FLIGHT SIMULATION SCENARIOS (FOR DEMO & EVALUATION):
+            </div>
+            <div class="scenario-buttons">
+                <button class="btn-scenario active" data-scenario="nominal">🟢 1. Nominal Orbit</button>
+                <button class="btn-scenario" data-scenario="docking_stress">🟠 2. Docking Stress (Level 2)</button>
+                <button class="btn-scenario" data-scenario="isolation_sadness">🔵 3. Space Isolation</button>
+                <button class="btn-scenario" data-scenario="severe_fatigue">🔴 4. Severe Fatigue & Microsleep (Level 3)</button>
+                <button class="btn-scenario" data-scenario="masked_stress">⚠️ 5. Masked Distress (Discordance)</button>
+            </div>
+        </div>
+
+        <!-- LEFT COLUMN: SENSOR FEEDS & BIOMETRICS -->
+        <section class="left-column">
+
+            <!-- Optical Sensor Panel -->
+            <div class="hud-panel" style="margin-bottom: 20px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>📹</span> Optical Vision Lock
+                    </div>
+                    <div class="panel-badge">15 FPS / FACS</div>
+                </div>
+
+                <div class="video-hud-container">
+                    <video id="webcam-video" autoplay playsinline muted></video>
+                    <canvas id="hud-canvas"></canvas>
+                </div>
+
+                <div class="camera-controls">
+                    <button id="btn-toggle-camera" class="btn-primary">
+                        📹 START OPTICAL
+                    </button>
+                </div>
+
+                <!-- Acoustic Waveform -->
+                <div class="audio-visualizer-container">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; font-family: var(--font-mono);">
+                        <span>MIC PROSODY STREAM</span>
+                        <span>16 kHz MONO</span>
+                    </div>
+                    <canvas id="audio-waveform-canvas" width="300" height="50"></canvas>
+                </div>
+            </div>
+
+            <!-- Physical Distress & Vitals Panel -->
+            <div class="hud-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🩺</span> Physical Well-Being Vitals
+                    </div>
+                    <div class="panel-badge">EDGE TELEMETRY</div>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Fatigue Status:</span>
+                    <strong id="vital-fatigue-level" style="font-size: 0.95rem; color: var(--green-nominal); display: block;">Nominal / Rested</strong>
+                </div>
+
+                <div class="vitals-grid">
+                    <div class="vital-card">
+                        <div class="vital-label">PERCLOS (Eye Closure)</div>
+                        <div id="vital-perclos" class="vital-value">4.2%</div>
+                        <div class="vital-unit">Threshold: &gt; 25%</div>
+                    </div>
+                    <div class="vital-card">
+                        <div class="vital-label">Blink Rate</div>
+                        <div id="vital-blinks" class="vital-value">16 BPM</div>
+                        <div class="vital-unit">Nominal: 12-20</div>
+                    </div>
+                    <div class="vital-card">
+                        <div class="vital-label">Yawn Frequency</div>
+                        <div id="vital-yawns" class="vital-value">0 /min</div>
+                        <div class="vital-unit">Fatigue marker</div>
+                    </div>
+                    <div class="vital-card">
+                        <div class="vital-label">Pain Grimace</div>
+                        <div id="vital-pain" class="vital-value">0 / 100</div>
+                        <div class="vital-unit">AU4+AU7+AU20</div>
+                    </div>
+                    <div class="vital-card">
+                        <div class="vital-label">Voice Pitch (F0)</div>
+                        <div id="vital-pitch" class="vital-value">132 Hz</div>
+                        <div class="vital-unit">Autocorrelation</div>
+                    </div>
+                    <div class="vital-card">
+                        <div class="vital-label">Vocal Tension</div>
+                        <div id="vital-vocal-tension" class="vital-value">8%</div>
+                        <div class="vital-unit">Jitter/Arousal</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- MIDDLE COLUMN: EMOTION FUSION, RISK SCORER & PACER -->
+        <section class="middle-column">
+
+            <!-- Risk Escalation Gauge -->
+            <div class="hud-panel" style="margin-bottom: 20px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>⚡</span> 4-Tier Risk Escalation Engine
+                    </div>
+                    <div class="panel-badge">ISRO PROTOCOL</div>
+                </div>
+
+                <div class="risk-gauge-card">
+                    <div id="risk-level-badge" class="risk-level-banner" style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--green-nominal); color: var(--green-nominal);">
+                        LEVEL 0: NOMINAL
+                    </div>
+                    <div class="risk-score-display" id="risk-score-value">
+                        12.5
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Composite Distress Risk Score (0 - 100)</div>
+
+                    <div class="risk-progress-bar-bg">
+                        <div id="risk-bar-fill" class="risk-progress-bar-fill"></div>
+                    </div>
+                </div>
+
+                <!-- Cross-Modal Discordance Alert Banner -->
+                <div id="discordance-banner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red-critical); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
+                    <div style="color: var(--red-critical); font-weight: 700; font-size: 0.85rem; font-family: var(--font-hud);">
+                        ⚠️ CROSS-MODAL DISCORDANCE DETECTED (MASKED DISTRESS)
+                    </div>
+                    <div id="discordance-text" style="font-size: 0.85rem; color: #fecaca; margin-top: 4px;">
+                        Astronaut smiling facially, but vocal tension biomarkers exhibit acute autonomic stress.
+                    </div>
+                </div>
+
+                <!-- 7 Emotion Probabilities Breakdown -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-family: var(--font-hud); font-size: 0.85rem; color: var(--cyan-hud);">DOMINANT MULTIMODAL STATE:</span>
+                        <span id="dominant-emotion-text" style="font-family: var(--font-hud); font-size: 0.95rem; font-weight: 700; color: var(--cyan-hud);">CALM / NEUTRAL</span>
+                    </div>
+                    <div id="dominant-emotion-conf" style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); margin-bottom: 12px;">CONFIDENCE: 84%</div>
+
+                    <div class="emotion-bars-container">
+                        <div class="emotion-bar-row">
+                            <span style="color: #10b981;">Happy / Uplifted</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-happy" class="emotion-bar-fill" style="background: #10b981; width: 10%;"></div></div>
+                            <span id="bar-val-happy" style="color: var(--text-dim);">10%</span>
+                        </div>
+                        <div class="emotion-bar-row">
+                            <span style="color: #00f0ff;">Calm / Neutral</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-neutral" class="emotion-bar-fill" style="background: #00f0ff; width: 70%;"></div></div>
+                            <span id="bar-val-neutral" style="color: var(--text-dim);">70%</span>
+                        </div>
+                        <div class="emotion-bar-row">
+                            <span style="color: #f59e0b;">Stressed / Overload</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-stressed" class="emotion-bar-fill" style="background: #f59e0b; width: 5%;"></div></div>
+                            <span id="bar-val-stressed" style="color: var(--text-dim);">5%</span>
+                        </div>
+                        <div class="emotion-bar-row">
+                            <span style="color: #8b5cf6;">Fatigued / Drowsy</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-fatigued" class="emotion-bar-fill" style="background: #8b5cf6; width: 5%;"></div></div>
+                            <span id="bar-val-fatigued" style="color: var(--text-dim);">5%</span>
+                        </div>
+                        <div class="emotion-bar-row">
+                            <span style="color: #f97316;">Anxious / Tense</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-anxious" class="emotion-bar-fill" style="background: #f97316; width: 4%;"></div></div>
+                            <span id="bar-val-anxious" style="color: var(--text-dim);">4%</span>
+                        </div>
+                        <div class="emotion-bar-row">
+                            <span style="color: #3b82f6;">Sad / Isolated</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-sad" class="emotion-bar-fill" style="background: #3b82f6; width: 3%;"></div></div>
+                            <span id="bar-val-sad" style="color: var(--text-dim);">3%</span>
+                        </div>
+                        <div class="emotion-bar-row">
+                            <span style="color: #ef4444;">Frustrated / Angry</span>
+                            <div class="emotion-bar-track"><div id="bar-fill-frustrated" class="emotion-bar-fill" style="background: #ef4444; width: 3%;"></div></div>
+                            <span id="bar-val-frustrated" style="color: var(--text-dim);">3%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guided Tactical Breathing Pacer (Intervention) -->
+            <div class="hud-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>🧘</span> Evidence-Based Tactical Pacer (Sama Vritti 4-4-4-4)
+                    </div>
+                    <div class="panel-badge">PARASYMPATHETIC RESET</div>
+                </div>
+
+                <div class="breathing-pacer-box">
+                    <div id="pacer-circle" class="pacer-circle">
+                        <span id="pacer-seconds">4</span>
+                    </div>
+                    <strong id="pacer-state" style="font-family: var(--font-hud); font-size: 1rem; color: var(--green-nominal);">
+                        INHALE (4s)
+                    </strong>
+                    <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
+                        Follow the orbital pacer to downregulate autonomic cortisol spikes.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: CONVERSATIONAL AI & GROUND STATION ALERTS -->
+        <section class="right-column">
+
+            <!-- AI Companion Conversation Console -->
+            <div class="hud-panel" style="margin-bottom: 20px;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>💬</span> MAITRI Space Companion AI
+                    </div>
+                    <div class="panel-badge">OFFLINE LLM / TTS</div>
+                </div>
+
+                <div id="chat-messages" class="chat-messages-container">
+                    <div class="chat-bubble ai">
+                        <div class="chat-speaker-label">MAITRI AI COMPANION</div>
+                        <div>Welcome aboard Bhartiya Antariksh Station, Commander. All multimodal sensors are calibrated. I am monitoring your physiological and emotional wellness in real time. How are you feeling today?</div>
+                    </div>
+                </div>
+
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Speak or type to MAITRI..." autocomplete="off">
+                    <button id="btn-voice-input" class="btn-secondary" title="Voice Input (Speech-to-Text)">
+                        🎤
+                    </button>
+                    <button id="btn-send-chat" class="btn-primary" style="flex: 0 0 70px;">
+                        SEND
+                    </button>
+                </div>
+            </div>
+
+            <!-- ISRO Ground Station Alert Dispatcher -->
+            <div class="hud-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>📡</span> Ground Station Alert Buffer
+                    </div>
+                    <div id="alert-count-badge" class="panel-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444;">
+                        0 QUEUED
+                    </div>
+                </div>
+
+                <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px;">
+                    Telemetry packets automatically queued for ISTRAC ground flight surgeon upon Risk Level &ge; 2:
+                </div>
+
+                <div id="alert-feed-list" class="alert-feed-list">
+                    <div style="color: var(--text-dim); font-size: 0.82rem; text-align: center; padding: 20px 0;">
+                        No active critical alerts. Station telemetry nominal.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

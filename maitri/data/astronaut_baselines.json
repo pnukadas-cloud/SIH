@@ -1,0 +1,64 @@
+{
+  "crew_profiles": [
+    {
+      "astronaut_id": "CREW-BAS-01",
+      "callsign": "Vyom-Leader",
+      "name": "Wing Cmdr. Prashanth Nair",
+      "role": "Mission Commander",
+      "mission": "Gaganyaan-BAS Expedition 1",
+      "baseline_vitals": {
+        "resting_heart_rate_bpm": 64,
+        "blink_rate_bpm": 16.5,
+        "resting_ear": 0.32,
+        "resting_mar": 0.18,
+        "mean_f0_pitch_hz": 128.0,
+        "pitch_std_hz": 18.2
+      },
+      "coping_preferences": [
+        "Tactical breathing",
+        "Direct operational summaries",
+        "Short guided cognitive reframing"
+      ]
+    },
+    {
+      "astronaut_id": "CREW-BAS-02",
+      "callsign": "Gagan-Doc",
+      "name": "Dr. Sunidhi Sharma",
+      "role": "Flight Surgeon / Payload Specialist",
+      "mission": "Gaganyaan-BAS Expedition 1",
+      "baseline_vitals": {
+        "resting_heart_rate_bpm": 68,
+        "blink_rate_bpm": 18.0,
+        "resting_ear": 0.34,
+        "resting_mar": 0.19,
+        "mean_f0_pitch_hz": 215.0,
+        "pitch_std_hz": 24.5
+      },
+      "coping_preferences": [
+        "Sensory grounding",
+        "Micro-rest power nap",
+        "Classical ambient music"
+      ]
+    },
+    {
+      "astronaut_id": "CREW-BAS-03",
+      "callsign": "Shakti-Pilot",
+      "name": "Group Capt. Ajit Krishnan",
+      "role": "Flight Engineer & Systems Specialist",
+      "mission": "Gaganyaan-BAS Expedition 1",
+      "baseline_vitals": {
+        "resting_heart_rate_bpm": 62,
+        "blink_rate_bpm": 15.0,
+        "resting_ear": 0.31,
+        "resting_mar": 0.17,
+        "mean_f0_pitch_hz": 134.0,
+        "pitch_std_hz": 19.8
+      },
+      "coping_preferences": [
+        "Box breathing",
+        "Family audio logs",
+        "Objective checklist review"
+      ]
+    }
+  ]
+}

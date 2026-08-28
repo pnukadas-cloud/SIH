@@ -1,0 +1,90 @@
+{
+  "interventions": [
+    {
+      "id": "INT-BREATHE-01",
+      "name": "Box Breathing (Sama Vritti 4-4-4-4)",
+      "target_emotions": ["stressed", "anxious", "frustrated"],
+      "target_risk_levels": [1, 2, 3],
+      "category": "Autonomic Nervous System Regulation",
+      "description": "Standard spaceflight tactical calming protocol to reset parasympathetic tone and downregulate acute autonomic arousal.",
+      "duration_seconds": 60,
+      "steps": [
+        "Inhale deeply through your nose for 4 seconds as your diaphragm expands.",
+        "Hold your breath with relaxed chest for 4 seconds.",
+        "Exhale steadily through your mouth for 4 seconds.",
+        "Hold empty and still for 4 seconds before the next cycle."
+      ],
+      "verbal_guidance": "Captain, I detect elevated autonomic arousal and vocal tension. Let us synchronize a 4-cycle tactical box breathing exercise together. Inhale now... 2... 3... 4. Hold... 2... 3... 4. Exhale smoothly... 2... 3... 4. Hold empty... 2... 3... 4. Excellent rhythm. Re-centering autonomic baseline.",
+      "expected_outcome": "Reduces heart rate variability stress spikes by up to 34% within 2 minutes."
+    },
+    {
+      "id": "INT-GROUND-02",
+      "name": "5-4-3-2-1 Sensory Grounding (Orbital Module Adapt)",
+      "target_emotions": ["anxious", "sad", "stressed"],
+      "target_risk_levels": [2, 3],
+      "category": "Cognitive De-escalation & Spatial Re-anchoring",
+      "description": "Re-anchors cognitive attention away from catastrophic rumination or acute space isolation distress onto immediate tactile cabin environment.",
+      "duration_seconds": 90,
+      "steps": [
+        "Acknowledge 5 visual fixtures you see in the module (consoles, tether clips, hatch frame).",
+        "Touch 4 distinct physical textures (suit fabric, aluminum handrail, velcro strap, cooling tube).",
+        "Identify 3 auditory frequencies (air circulation hum, solenoid click, telemetry beep).",
+        "Notice 2 physical body sensations (feet in foot restraints, helmet collar contact).",
+        "Take 1 deep grounding breath and state your current mission objective."
+      ],
+      "verbal_guidance": "I sense acute cognitive overload and detachment indicators. Let us anchor to the station environment right now. Look at your primary console: name 5 instruments aloud. Feel the textured grip on handrail Alpha-3. Listen to the steady drone of the life-support fans. You are safe aboard BAS, in full nominal orbit. Ground station and I are right here with you.",
+      "expected_outcome": "Interrupts panic dissociation loops and restores situational presence."
+    },
+    {
+      "id": "INT-REFRAME-03",
+      "name": "Cognitive Reframing (CBT Protocol)",
+      "target_emotions": ["frustrated", "sad", "stressed"],
+      "target_risk_levels": [1, 2],
+      "category": "Cognitive Behavioral Therapy (CBT)",
+      "description": "Evidence-based identification and dismantling of negative cognitive distortions arising from high-consequence mission pressure and confined quarters.",
+      "duration_seconds": 120,
+      "steps": [
+        "Identify the automatic catastrophic thought (e.g., 'The docking maneuver failed because I lost focus').",
+        "Evaluate empirical objective facts versus affective emotional perception.",
+        "Formulate a balanced, operational reality construct (e.g., 'Sensor telemetry experienced latency; my reaction was within standard contingency tolerance').",
+        "Commit to next actionable procedural checklist step."
+      ],
+      "verbal_guidance": "Let us examine that thought objectively. High-tempo orbital operations naturally generate intense internal pressure. You have logged over 800 hours of flawless simulation drills. What occurred was an unexpected thruster variance, not a personal procedural failure. Let us run the diagnostics together, one checkpoint at a time.",
+      "expected_outcome": "Lowers acute cortisol response and restores executive functioning."
+    },
+    {
+      "id": "INT-FATIGUE-04",
+      "name": "Micro-Rest & Circadian Alignment Protocol",
+      "target_emotions": ["fatigued"],
+      "target_risk_levels": [1, 2, 3],
+      "category": "Neuro-Cognitive Recovery & Sleep Hygiene",
+      "description": "Mitigates microsleep risks and attention lapses during 90-minute orbital sunrise/sunset circadian disruption cycles.",
+      "duration_seconds": 900,
+      "steps": [
+        "Dim personal quarters ambient illumination to 480nm amber spectrum.",
+        "Engage acoustic noise dampening earmuffs.",
+        "Perform 2 minutes of eye convergence relaxation exercises (20-20-20 rule modified for zero-G).",
+        "Enter 15-minute targeted power-nap with scheduled acoustic wake-beacon."
+      ],
+      "verbal_guidance": "Telemetry indicates PERCLOS eye closure has reached 28% with consecutive micro-yawns. Your reaction latency is climbing. Mission timeline allows a 15-minute strategic micro-rest window prior to the next EVA prep. I have adjusted your cabin lighting to amber and will monitor all telemetry while you recharge. Close your eyes, Commander.",
+      "expected_outcome": "Restores cognitive alertness and reduces operational error probability by 45%."
+    },
+    {
+      "id": "INT-COMPANION-05",
+      "name": "Empathetic Space Companionship & Isolation Relief",
+      "target_emotions": ["sad", "neutral"],
+      "target_risk_levels": [0, 1],
+      "category": "Psychological Well-Being & Morale Maintenance",
+      "description": "Conversational companion engagement connecting the crew with personal milestones, family audio uplinks, and positive mission reflections.",
+      "duration_seconds": 180,
+      "steps": [
+        "Inquire with warmth about the crew member's day and personal state.",
+        "Share uplifting cultural and scientific milestones from Earth.",
+        "Offer to playback curated ground family audio-letters or preferred ambient soundscapes.",
+        "Reaffirm the crew's vital historical contribution to India's space program."
+      ],
+      "verbal_guidance": "Station systems are all green, and we are passing right over the Indian subcontinent in 12 minutes. The lights of Bengaluru and Mumbai are clearly visible on the nadir camera. You have accomplished monumental scientific work today. Would you like to review the audio greeting uplinks from mission control, or just chat for a few minutes?",
+      "expected_outcome": "Counters long-duration spaceflight isolation syndrome and bolsters crew morale."
+    }
+  ]
+}

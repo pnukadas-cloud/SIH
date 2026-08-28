@@ -1,0 +1,18 @@
+# MAITRI — Dependencies
+# Multimodal AI Assistant for Psychological & Physical Well-Being of Astronauts
+# SIH 2025 · Problem ID: 25175 · ISRO / Department of Space
+
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+websockets>=12.0
+pydantic>=2.6.0
+numpy>=1.26.0
+scipy>=1.12.0
+scikit-learn>=1.4.0
+opencv-python>=4.9.0
+soundfile>=0.12.1
+pyttsx3>=2.90
+requests>=2.31.0
+pillow>=10.2.0
+python-multipart>=0.0.9
+matplotlib>=3.8.0
