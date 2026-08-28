@@ -1,37 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAITRI — Spacecraft Well-Being HUD | ISRO BAS</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>MAITRI — Multimodal AI Assistant for Astronaut Well-Being | ISRO BAS</title>
+    
+    <!-- Tailwind CSS with custom plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed-dim": "#c6bfff",
+                        "surface-container-high": "#272a31",
+                        "on-secondary-fixed-variant": "#005227",
+                        "on-tertiary-container": "#4e3e00",
+                        "primary": "#c6bfff",
+                        "surface-bright": "#363940",
+                        "outline": "#928ea0",
+                        "surface-variant": "#32353c",
+                        "on-tertiary-fixed": "#231b00",
+                        "on-background": "#e1e2eb",
+                        "secondary-fixed": "#6dfe9c",
+                        "tertiary-fixed-dim": "#eec200",
+                        "on-primary-fixed-variant": "#3e25c2",
+                        "surface": "#10131a",
+                        "primary-fixed": "#e4dfff",
+                        "inverse-on-surface": "#2e3037",
+                        "secondary": "#4de082",
+                        "on-surface-variant": "#c8c4d7",
+                        "inverse-surface": "#e1e2eb",
+                        "on-secondary-fixed": "#00210c",
+                        "surface-container-lowest": "#0b0e14",
+                        "on-surface": "#e1e2eb",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#003e1c",
+                        "tertiary": "#eec200",
+                        "on-primary-container": "#fffaff",
+                        "secondary-container": "#00b55d",
+                        "surface-container-highest": "#32353c",
+                        "on-secondary": "#003919",
+                        "surface-container-low": "#191c22",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#574500",
+                        "tertiary-fixed": "#ffe083",
+                        "surface-container": "#1d2026",
+                        "outline-variant": "#474555",
+                        "tertiary-container": "#cea700",
+                        "error-container": "#93000a",
+                        "on-primary-fixed": "#150066",
+                        "surface-tint": "#c6bfff",
+                        "on-primary": "#2700a0",
+                        "primary-container": "#6d5df1",
+                        "inverse-primary": "#5744da",
+                        "surface-dim": "#10131a",
+                        "on-tertiary": "#3c2f00",
+                        "background": "#10131a",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#4de082"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem",
+                        xl: "0.5rem",
+                        full: "0.75rem"
+                    },
+                    fontFamily: {
+                        "data-mono": ["JetBrains Mono", "monospace"],
+                        "label-caps": ["Inter", "sans-serif"],
+                        "title-sm": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0B0E14; color: #e1e2eb; }
+        .panel { background-color: #151921; border: 1px solid #2D333F; }
+        .panel:hover { border-color: #474555; }
+        .active-panel { border-color: #6D5DF1; }
+        .separator { border-color: #2D333F; }
+        .data-mono { font-family: 'JetBrains Mono', monospace; }
+        .data-row:hover { background-color: #1C212B; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .cyber-grid {
+            background-image: 
+                linear-gradient(to right, #2D333F 1px, transparent 1px),
+                linear-gradient(to bottom, #2D333F 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-position: center center;
+        }
+        .text-status-nominal { color: #4de082; }
+        .text-status-warning { color: #eec200; }
+        .text-status-critical { color: #ffb4ab; }
+        .border-l-nominal { border-left: 4px solid #4de082; }
+        .border-l-warning { border-left: 4px solid #eec200; }
+        .border-l-critical { border-left: 4px solid #ffb4ab; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
 </head>
-<body>
+<body class="bg-surface-container-lowest text-on-surface font-body-md h-screen overflow-hidden flex">
 
-    <!-- TOP NAVIGATION & ORBITAL STATUS BAR -->
-    <header class="top-navbar">
-        <div class="brand-section">
-            <div class="brand-logo">
-                <span>🛰️</span> MAITRI
+    <!-- SideNavBar -->
+    <aside class="bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant dark:border-outline-variant h-screen w-64 left-0 sticky flex flex-col py-4 gap-2 z-40 hidden md:flex shrink-0">
+        <div class="px-4 mb-3 border-b border-outline-variant pb-3">
+            <h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight">BAS/Crew-01</h1>
+            <div class="flex items-center gap-2 mt-1">
+                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                <p class="font-data-mono text-[11px] text-secondary">Edge Mode: Active</p>
             </div>
-            <div class="brand-sub">
-                MULTIMODAL AI COMPANION | BHARTIYA ANTARIKSH STATION
-            </div>
-        </div>
-
-        <div class="station-telemetry-badge">
-            <div class="status-dot"></div>
-            <span>ORBIT: 410 KM LEO</span>
-            <span>|</span>
-            <span>LIFE SUPPORT: 101.3 kPa (NOMINAL)</span>
-            <span>|</span>
-            <span>ISRO ISTRAC LINK: ACTIVE</span>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <label for="crew-selector" style="font-family: var(--font-hud); font-size: 0.75rem; color: var(--cyan-hud);">CREW LOCK:</label>
-            <select id="crew-selector" style="background: #0b1120; color: #00f0ff; border: 1px solid var(--border-glass-strong); padding: 5px 10px; border-radius: 6px; font-family: var(--font-body); font-weight: 600;">
+            <!-- Crew Selector Dropdown -->
+            <select id="crew-selector" class="mt-2 w-full bg-surface text-primary border border-outline-variant rounded-DEFAULT text-xs p-1 font-data-mono">
                 {% for crew in crew_profiles %}
                 <option value="{{ crew.astronaut_id }}" {% if crew.astronaut_id == active_astronaut.astronaut_id %}selected{% endif %}>
                     {{ crew.callsign }} ({{ crew.name }})
@@ -39,275 +128,727 @@
                 {% endfor %}
             </select>
         </div>
-    </header>
 
-    <!-- MAIN DASHBOARD -->
-    <main class="dashboard-grid">
+        <!-- Navigation Tabs -->
+        <nav class="flex-1 overflow-y-auto w-full px-2">
+            <ul class="flex flex-col gap-1 w-full">
+                <li>
+                    <a class="nav-tab-btn flex items-center gap-3 px-3 py-2 border-l-2 border-primary text-primary bg-surface-container-high w-full font-label-caps text-[12px] font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer" data-tab="dashboard">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-tab-btn flex items-center gap-3 px-3 py-2 text-on-surface-variant bg-transparent hover:bg-surface-container transition-all w-full font-label-caps text-[12px] font-semibold tracking-wider uppercase cursor-pointer" data-tab="analysis">
+                        <span class="material-symbols-outlined text-[20px]">analytics</span>
+                        <span>Analysis</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-tab-btn flex items-center gap-3 px-3 py-2 text-on-surface-variant bg-transparent hover:bg-surface-container transition-all w-full font-label-caps text-[12px] font-semibold tracking-wider uppercase cursor-pointer" data-tab="interventions">
+                        <span class="material-symbols-outlined text-[20px]">psychology</span>
+                        <span>Interventions</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-tab-btn flex items-center gap-3 px-3 py-2 text-on-surface-variant bg-transparent hover:bg-surface-container transition-all w-full font-label-caps text-[12px] font-semibold tracking-wider uppercase cursor-pointer" data-tab="alerts">
+                        <span class="material-symbols-outlined text-[20px]">warning</span>
+                        <span>Alerts</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-tab-btn flex items-center gap-3 px-3 py-2 text-on-surface-variant bg-transparent hover:bg-surface-container transition-all w-full font-label-caps text-[12px] font-semibold tracking-wider uppercase cursor-pointer" data-tab="sessions">
+                        <span class="material-symbols-outlined text-[20px]">history</span>
+                        <span>Session Logs</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-tab-btn flex items-center gap-3 px-3 py-2 text-on-surface-variant bg-transparent hover:bg-surface-container transition-all w-full font-label-caps text-[12px] font-semibold tracking-wider uppercase cursor-pointer" data-tab="profile">
+                        <span class="material-symbols-outlined text-[20px]">person</span>
+                        <span>Astronaut Profile</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
 
-        <!-- SIMULATION SCENARIO QUICK-TRIGGER BAR -->
-        <div class="scenario-bar">
-            <div class="scenario-title">
-                <span>⚡</span> FLIGHT SIMULATION SCENARIOS (FOR DEMO & EVALUATION):
+        <!-- Edge Status footer -->
+        <div class="px-4 pt-2 border-t border-outline-variant text-[11px] font-data-mono text-on-surface-variant">
+            <div>ISRO / GAGANYAAN</div>
+            <div class="text-secondary mt-0.5">ORBIT: 410 KM (NOMINAL)</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden bg-surface-container-lowest">
+
+        <!-- TopAppBar -->
+        <header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant w-full h-16 top-0 sticky flex justify-between items-center px-6 z-30 shrink-0">
+            <div class="flex items-center gap-4">
+                <span class="font-display-lg text-2xl font-bold text-primary dark:text-primary-fixed-dim tracking-wider uppercase">MAITRI</span>
+                <span class="h-6 w-px bg-outline-variant hidden md:block"></span>
+                <span id="page-title-display" class="font-title-sm text-sm text-on-surface-variant uppercase tracking-wider hidden md:inline-block">Primary Astronaut Well-Being Dashboard</span>
             </div>
-            <div class="scenario-buttons">
-                <button class="btn-scenario active" data-scenario="nominal">🟢 1. Nominal Orbit</button>
-                <button class="btn-scenario" data-scenario="docking_stress">🟠 2. Docking Stress (Level 2)</button>
-                <button class="btn-scenario" data-scenario="isolation_sadness">🔵 3. Space Isolation</button>
-                <button class="btn-scenario" data-scenario="severe_fatigue">🔴 4. Severe Fatigue & Microsleep (Level 3)</button>
-                <button class="btn-scenario" data-scenario="masked_stress">⚠️ 5. Masked Distress (Discordance)</button>
+
+            <!-- Global Live Actions & Hardware Toggles -->
+            <div class="flex items-center gap-3">
+                <button id="btn-toggle-camera" class="bg-primary/20 border border-primary text-primary hover:bg-primary/30 px-3 py-1.5 rounded-DEFAULT text-xs font-label-caps uppercase flex items-center gap-1.5 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">videocam</span>
+                    <span>START OPTICAL</span>
+                </button>
+                <button id="btn-toggle-voice-listen" class="bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high px-3 py-1.5 rounded-DEFAULT text-xs font-label-caps uppercase flex items-center gap-1.5 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">mic</span>
+                    <span>VOICE: OFF</span>
+                </button>
+                <div class="h-6 w-px bg-outline-variant"></div>
+                <div class="flex items-center gap-1 text-primary font-data-mono text-xs">
+                    <span class="material-symbols-outlined text-sm text-secondary">wifi_tethering</span>
+                    <span id="live-mission-clock">T+04:12:33</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flight Simulation Scenario Bar -->
+        <div class="bg-surface-container-low border-b border-outline-variant px-6 py-2 flex items-center justify-between gap-2 overflow-x-auto shrink-0">
+            <div class="flex items-center gap-2 text-xs font-label-caps uppercase text-primary">
+                <span class="material-symbols-outlined text-[16px] text-tertiary">bolt</span>
+                <span>Flight Scenarios:</span>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button class="btn-scenario px-2.5 py-1 text-[11px] font-data-mono rounded-DEFAULT bg-surface border border-outline-variant text-on-surface hover:border-primary active:bg-primary/20" data-scenario="nominal">🟢 1. Nominal</button>
+                <button class="btn-scenario px-2.5 py-1 text-[11px] font-data-mono rounded-DEFAULT bg-surface border border-outline-variant text-on-surface hover:border-tertiary active:bg-tertiary/20" data-scenario="docking_stress">🟠 2. Docking Stress</button>
+                <button class="btn-scenario px-2.5 py-1 text-[11px] font-data-mono rounded-DEFAULT bg-surface border border-outline-variant text-on-surface hover:border-primary active:bg-primary/20" data-scenario="isolation_sadness">🔵 3. Space Isolation</button>
+                <button class="btn-scenario px-2.5 py-1 text-[11px] font-data-mono rounded-DEFAULT bg-surface border border-outline-variant text-on-surface hover:border-error active:bg-error/20" data-scenario="severe_fatigue">🔴 4. Severe Fatigue</button>
+                <button class="btn-scenario px-2.5 py-1 text-[11px] font-data-mono rounded-DEFAULT bg-surface border border-outline-variant text-on-surface hover:border-tertiary active:bg-tertiary/20" data-scenario="masked_stress">⚠️ 5. Masked Distress</button>
             </div>
         </div>
 
-        <!-- LEFT COLUMN: SENSOR FEEDS & BIOMETRICS -->
-        <section class="left-column">
+        <!-- TAB 1: MAIN DASHBOARD -->
+        <main id="tab-dashboard" class="tab-content active flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
 
-            <!-- Optical Sensor Panel -->
-            <div class="hud-panel" style="margin-bottom: 20px;">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>📹</span> Optical Vision Lock
+                <!-- Left Column: Video Feed & Telemetry (8 cols) -->
+                <div class="lg:col-span-8 flex flex-col gap-4">
+                    
+                    <!-- Live Astronaut Optical Monitor -->
+                    <section class="panel rounded-DEFAULT flex flex-col min-h-[380px] relative overflow-hidden active-panel">
+                        <div class="absolute top-2 left-2 z-20 flex items-center gap-2 bg-surface-container-lowest/85 px-2.5 py-1 border border-outline-variant rounded-DEFAULT backdrop-blur-sm">
+                            <span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+                            <span class="font-data-mono text-[11px] text-on-surface">LIVE FEED // 30 FPS</span>
+                        </div>
+                        <div class="absolute top-2 right-2 z-20 bg-surface-container-lowest/85 px-2.5 py-1 border border-outline-variant rounded-DEFAULT backdrop-blur-sm flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-secondary text-sm">visibility</span>
+                            <span id="optical-lock-badge" class="font-data-mono text-[11px] text-secondary">NOMINAL TRACKING</span>
+                        </div>
+
+                        <!-- Video Feed & HUD Overlay Canvas -->
+                        <div class="flex-1 w-full h-full bg-surface-container-lowest relative group min-h-[300px] flex items-center justify-center">
+                            <video id="webcam-video" class="hidden" autoplay playsinline muted></video>
+                            <canvas id="hud-canvas" class="w-full h-full object-cover"></canvas>
+
+                            <!-- Bottom Floating Telemetry Overlay -->
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-end bg-surface-container-lowest/90 px-3 py-2 border border-outline-variant rounded-DEFAULT backdrop-blur-sm">
+                                <div>
+                                    <span class="font-label-caps text-[10px] text-on-surface-variant block uppercase">AFFECTIVE STATE</span>
+                                    <div class="flex items-baseline gap-2">
+                                        <span id="dominant-emotion-text" class="font-headline-md text-xl text-primary font-bold leading-none">CALM / NEUTRAL</span>
+                                        <span id="dominant-emotion-conf" class="font-data-mono text-xs text-primary">85%</span>
+                                    </div>
+                                    <div id="discordance-banner" class="hidden text-error text-[11px] font-label-caps mt-1 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">warning</span>
+                                        <span id="discordance-text">Masked Distress Detected</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <div class="bg-surface px-2.5 py-1 border border-outline-variant rounded-DEFAULT flex flex-col items-center">
+                                        <span class="font-label-caps text-[9px] text-on-surface-variant uppercase">PERCLOS</span>
+                                        <span id="vital-perclos" class="font-data-mono text-xs text-on-surface font-bold">4.2%</span>
+                                    </div>
+                                    <div class="bg-surface px-2.5 py-1 border border-outline-variant rounded-DEFAULT flex flex-col items-center">
+                                        <span class="font-label-caps text-[9px] text-on-surface-variant uppercase">VOICE F0</span>
+                                        <span id="vital-pitch" class="font-data-mono text-xs text-secondary font-bold">132 Hz</span>
+                                    </div>
+                                    <div class="bg-surface px-2.5 py-1 border border-outline-variant rounded-DEFAULT flex flex-col items-center">
+                                        <span class="font-label-caps text-[9px] text-on-surface-variant uppercase">TENSION</span>
+                                        <span id="vital-vocal-tension" class="font-data-mono text-xs text-primary font-bold">8%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Analysis & Risk Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- Multimodal Fusion Engine -->
+                        <section class="panel rounded-DEFAULT p-4 flex flex-col gap-3">
+                            <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+                                <h2 class="font-label-caps text-xs text-on-surface-variant uppercase font-bold">Multimodal Fusion Engine</h2>
+                                <span class="font-data-mono text-[11px] text-primary">FUSION: ATTN-LATE</span>
+                            </div>
+                            <div class="flex flex-col gap-2.5 flex-1 justify-center">
+                                <!-- Facial -->
+                                <div class="flex items-center justify-between text-xs font-data-mono">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary text-sm">face</span>
+                                        <span>FACIAL (FER)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 w-1/2">
+                                        <div class="flex-1 bg-surface h-1.5 rounded-full overflow-hidden">
+                                            <div id="bar-fill-facial" class="bg-primary h-full transition-all duration-300" style="width: 78%"></div>
+                                        </div>
+                                        <span id="bar-val-facial" class="w-10 text-right">78%</span>
+                                    </div>
+                                </div>
+                                <!-- Speech -->
+                                <div class="flex items-center justify-between text-xs font-data-mono">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-secondary text-sm">mic</span>
+                                        <span>SPEECH (SER)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 w-1/2">
+                                        <div class="flex-1 bg-surface h-1.5 rounded-full overflow-hidden">
+                                            <div id="bar-fill-speech" class="bg-secondary h-full transition-all duration-300" style="width: 65%"></div>
+                                        </div>
+                                        <span id="bar-val-speech" class="w-10 text-right">65%</span>
+                                    </div>
+                                </div>
+                                <!-- Text -->
+                                <div class="flex items-center justify-between text-xs font-data-mono">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-tertiary text-sm">description</span>
+                                        <span>TEXT (NLP)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 w-1/2">
+                                        <div class="flex-1 bg-surface h-1.5 rounded-full overflow-hidden">
+                                            <div id="bar-fill-text" class="bg-tertiary h-full transition-all duration-300" style="width: 60%"></div>
+                                        </div>
+                                        <span id="bar-val-text" class="w-10 text-right">60%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-surface px-2.5 py-1.5 border border-outline-variant rounded-DEFAULT flex justify-between items-center text-[11px] font-data-mono">
+                                <span class="text-on-surface-variant font-label-caps">ATTENTION WTS:</span>
+                                <div class="flex gap-2">
+                                    <span id="attn-w-f">F:40%</span>
+                                    <span id="attn-w-v" class="text-secondary">V:35%</span>
+                                    <span id="attn-w-t">T:25%</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Risk Monitor -->
+                        <section class="panel rounded-DEFAULT p-4 flex flex-col gap-3 border-l-4 border-tertiary bg-tertiary/5 relative overflow-hidden">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="font-label-caps text-xs text-on-surface-variant uppercase font-bold">Aggregated Risk Level</h2>
+                                    <div class="flex items-baseline gap-1 mt-1">
+                                        <span id="risk-score-value" class="font-display-lg text-3xl font-bold text-tertiary">12.5</span>
+                                        <span class="font-data-mono text-xs text-on-surface-variant">/100</span>
+                                    </div>
+                                </div>
+                                <div id="risk-level-badge" class="bg-surface px-2.5 py-1 border border-tertiary/50 rounded-DEFAULT flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                    <span class="font-label-caps text-[11px] text-secondary font-semibold">LEVEL 0: NOMINAL</span>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 flex flex-col justify-end gap-2">
+                                <div>
+                                    <div class="flex justify-between font-label-caps text-[10px] text-on-surface-variant mb-1">
+                                        <span>SEVERITY HORIZON</span>
+                                        <span id="risk-trend-indicator" class="text-secondary flex items-center text-[10px]">
+                                            <span class="material-symbols-outlined text-xs mr-0.5">trending_flat</span> STABLE
+                                        </span>
+                                    </div>
+                                    <div class="w-full h-2 bg-surface flex rounded-full overflow-hidden">
+                                        <div id="risk-bar-fill" class="h-full bg-secondary transition-all duration-400" style="width: 15%"></div>
+                                    </div>
+                                    <div class="flex justify-between font-data-mono text-[9px] text-on-surface-variant mt-1">
+                                        <span>NOMINAL (0-30)</span>
+                                        <span>MODERATE (51-70)</span>
+                                        <span>CRITICAL (&gt;70)</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center pt-2 border-t border-outline-variant text-[11px] font-data-mono">
+                                    <span class="font-label-caps text-on-surface-variant">STATE DURATION:</span>
+                                    <span id="state-duration-text" class="text-on-surface">T+ 00:14:32</span>
+                                </div>
+                            </div>
+                        </section>
                     </div>
-                    <div class="panel-badge">15 FPS / FACS</div>
+
+                    <!-- Acoustic Prosody & Live Waveform Monitor -->
+                    <section class="panel rounded-DEFAULT p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-label-caps text-[11px] text-on-surface-variant uppercase font-semibold flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-xs text-secondary">graphic_eq</span>
+                                Acoustic Prosody & Microphone Telemetry (16 kHz)
+                            </span>
+                            <span class="font-data-mono text-[10px] text-on-surface-variant">REAL-TIME SPECTROGRAM</span>
+                        </div>
+                        <canvas id="audio-waveform-canvas" class="w-full h-12 bg-surface-container-lowest rounded-DEFAULT border border-outline-variant"></canvas>
+                    </section>
                 </div>
 
-                <div class="video-hud-container">
-                    <video id="webcam-video" autoplay playsinline muted></video>
-                    <canvas id="hud-canvas"></canvas>
-                </div>
+                <!-- Right Column: Sidebar Panels (4 cols) -->
+                <div class="lg:col-span-4 flex flex-col gap-4 overflow-y-auto">
+                    
+                    <!-- Physiological Distress Markers -->
+                    <section class="panel rounded-DEFAULT p-4">
+                        <h2 class="font-label-caps text-xs text-on-surface-variant border-b border-outline-variant pb-2 uppercase font-bold mb-3">Physiological Distress Markers</h2>
+                        <ul class="flex flex-col gap-1.5 text-xs font-data-mono">
+                            <li class="flex justify-between items-center bg-surface px-3 py-1.5 border border-outline-variant rounded-DEFAULT">
+                                <span class="text-on-surface">Fatigue Level</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="vital-fatigue-level" class="text-secondary font-bold">NOMINAL</span>
+                                    <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                </div>
+                            </li>
+                            <li class="flex justify-between items-center bg-surface px-3 py-1.5 border border-outline-variant rounded-DEFAULT">
+                                <span class="text-on-surface">Yawning Frequency</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="vital-yawns" class="text-on-surface">0 /min</span>
+                                </div>
+                            </li>
+                            <li class="flex justify-between items-center bg-surface px-3 py-1.5 border border-outline-variant rounded-DEFAULT">
+                                <span class="text-on-surface">Blink Rate</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="vital-blinks" class="text-on-surface">16 BPM</span>
+                                </div>
+                            </li>
+                            <li class="flex justify-between items-center bg-surface px-3 py-1.5 border border-outline-variant rounded-DEFAULT">
+                                <span class="text-on-surface">Pain Grimace Index</span>
+                                <div class="flex items-center gap-2">
+                                    <span id="vital-pain" class="text-on-surface">0 / 100</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </section>
 
-                <div class="camera-controls" style="display: flex; gap: 8px;">
-                    <button id="btn-toggle-camera" class="btn-primary" style="flex: 1;">
-                        📹 START REAL-TIME OPTICAL
-                    </button>
-                    <button id="btn-toggle-voice-listen" class="btn-secondary" style="flex: 1;" title="Enable continuous hands-free voice input">
-                        🎙️ LIVE VOICE: OFF
-                    </button>
-                </div>
+                    <!-- MAITRI Conversation Panel -->
+                    <section class="panel rounded-DEFAULT p-4 flex flex-col flex-1 min-h-[300px]">
+                        <h2 class="font-label-caps text-xs text-on-surface-variant border-b border-outline-variant pb-2 uppercase font-bold mb-3 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-primary">forum</span>
+                            MAITRI Space Companion AI Log
+                        </h2>
+                        
+                        <div id="chat-messages" class="flex-1 flex flex-col gap-2.5 overflow-y-auto mb-3 font-body-md max-h-56 pr-1">
+                            <div class="bg-surface border border-outline-variant rounded-DEFAULT p-2.5 self-end w-5/6">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-label-caps text-[10px] text-primary font-bold">MAITRI AI</span>
+                                    <span class="font-data-mono text-[10px] text-on-surface-variant">T-02m</span>
+                                </div>
+                                <p class="text-on-surface text-xs">"Welcome aboard Bhartiya Antariksh Station. Multimodal biometric streams are calibrated and nominal. How is your focus?"</p>
+                            </div>
+                        </div>
 
-                <!-- Acoustic Waveform -->
-                <div class="audio-visualizer-container">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; font-family: var(--font-mono);">
-                        <span>MIC PROSODY STREAM</span>
-                        <span>16 kHz MONO</span>
-                    </div>
-                    <canvas id="audio-waveform-canvas" width="300" height="50"></canvas>
+                        <!-- Chat input -->
+                        <div class="flex gap-1.5 mb-3">
+                            <input type="text" id="chat-input" class="flex-1 bg-surface border border-outline-variant text-on-surface text-xs rounded-DEFAULT p-2 outline-none focus:border-primary font-body-md" placeholder="Speak or type to MAITRI..." autocomplete="off"/>
+                            <button id="btn-voice-input" class="bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high px-2.5 rounded-DEFAULT text-xs" title="Voice Input">
+                                <span class="material-symbols-outlined text-sm">mic</span>
+                            </button>
+                            <button id="btn-send-chat" class="bg-primary text-on-primary font-label-caps text-xs px-3 rounded-DEFAULT hover:bg-primary-fixed-dim uppercase font-bold">SEND</button>
+                        </div>
+
+                        <!-- Suggested Intervention Card -->
+                        <div class="bg-primary/10 border border-primary/30 rounded-DEFAULT p-2.5 mt-auto">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-label-caps text-[10px] text-primary uppercase font-bold">Active Protocol: Tactical Box Breathing</span>
+                                <span class="material-symbols-outlined text-primary text-sm">self_improvement</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-xs">
+                                <div class="font-data-mono text-[11px] text-on-surface">Sama Vritti 4-4-4-4: <span id="pacer-state" class="text-secondary font-bold">INHALE</span></div>
+                                <span id="pacer-seconds" class="font-data-mono text-sm text-secondary font-bold bg-surface px-2 py-0.5 border border-secondary/40 rounded-DEFAULT">4s</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Ground Station Alerts List -->
+                    <section class="panel rounded-DEFAULT p-4">
+                        <div class="flex justify-between items-center border-b border-outline-variant pb-2 mb-2">
+                            <h2 class="font-label-caps text-xs text-on-surface-variant uppercase font-bold">Ground Comms Uplink</h2>
+                            <span id="alert-count-badge" class="bg-surface px-1.5 py-0.5 rounded text-[10px] font-data-mono text-secondary">0 QUEUED</span>
+                        </div>
+                        <div id="alert-feed-list" class="flex flex-col gap-1.5 font-data-mono text-xs max-h-36 overflow-y-auto">
+                            <div class="p-2 bg-surface text-on-surface-variant text-[11px] text-center">
+                                Telemetry sync nominal. No active critical alerts.
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
+        </main>
 
-            <!-- Physical Distress & Vitals Panel -->
-            <div class="hud-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>🩺</span> Physical Well-Being Vitals
-                    </div>
-                    <div class="panel-badge">EDGE TELEMETRY</div>
-                </div>
-
-                <div style="margin-bottom: 8px;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Fatigue Status:</span>
-                    <strong id="vital-fatigue-level" style="font-size: 0.95rem; color: var(--green-nominal); display: block;">Nominal / Rested</strong>
-                </div>
-
-                <div class="vitals-grid">
-                    <div class="vital-card">
-                        <div class="vital-label">PERCLOS (Eye Closure)</div>
-                        <div id="vital-perclos" class="vital-value">4.2%</div>
-                        <div class="vital-unit">Threshold: &gt; 25%</div>
-                    </div>
-                    <div class="vital-card">
-                        <div class="vital-label">Blink Rate</div>
-                        <div id="vital-blinks" class="vital-value">16 BPM</div>
-                        <div class="vital-unit">Nominal: 12-20</div>
-                    </div>
-                    <div class="vital-card">
-                        <div class="vital-label">Yawn Frequency</div>
-                        <div id="vital-yawns" class="vital-value">0 /min</div>
-                        <div class="vital-unit">Fatigue marker</div>
-                    </div>
-                    <div class="vital-card">
-                        <div class="vital-label">Pain Grimace</div>
-                        <div id="vital-pain" class="vital-value">0 / 100</div>
-                        <div class="vital-unit">AU4+AU7+AU20</div>
-                    </div>
-                    <div class="vital-card">
-                        <div class="vital-label">Voice Pitch (F0)</div>
-                        <div id="vital-pitch" class="vital-value">132 Hz</div>
-                        <div class="vital-unit">Autocorrelation</div>
-                    </div>
-                    <div class="vital-card">
-                        <div class="vital-label">Vocal Tension</div>
-                        <div id="vital-vocal-tension" class="vital-value">8%</div>
-                        <div class="vital-unit">Jitter/Arousal</div>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- MIDDLE COLUMN: EMOTION FUSION, RISK SCORER & PACER -->
-        <section class="middle-column">
-
-            <!-- Risk Escalation Gauge -->
-            <div class="hud-panel" style="margin-bottom: 20px;">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>⚡</span> 4-Tier Risk Escalation Engine
-                    </div>
-                    <div class="panel-badge">ISRO PROTOCOL</div>
-                </div>
-
-                <div class="risk-gauge-card">
-                    <div id="risk-level-badge" class="risk-level-banner" style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--green-nominal); color: var(--green-nominal);">
-                        LEVEL 0: NOMINAL
-                    </div>
-                    <div class="risk-score-display" id="risk-score-value">
-                        12.5
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Composite Distress Risk Score (0 - 100)</div>
-
-                    <div class="risk-progress-bar-bg">
-                        <div id="risk-bar-fill" class="risk-progress-bar-fill"></div>
-                    </div>
-                </div>
-
-                <!-- Cross-Modal Discordance Alert Banner -->
-                <div id="discordance-banner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red-critical); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;">
-                    <div style="color: var(--red-critical); font-weight: 700; font-size: 0.85rem; font-family: var(--font-hud);">
-                        ⚠️ CROSS-MODAL DISCORDANCE DETECTED (MASKED DISTRESS)
-                    </div>
-                    <div id="discordance-text" style="font-size: 0.85rem; color: #fecaca; margin-top: 4px;">
-                        Astronaut smiling facially, but vocal tension biomarkers exhibit acute autonomic stress.
-                    </div>
-                </div>
-
-                <!-- 7 Emotion Probabilities Breakdown -->
+        <!-- TAB 2: DETAILED ANALYSIS -->
+        <main id="tab-analysis" class="tab-content flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="flex justify-between items-end pb-3 border-b border-outline-variant mb-4">
                 <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-family: var(--font-hud); font-size: 0.85rem; color: var(--cyan-hud);">DOMINANT MULTIMODAL STATE:</span>
-                        <span id="dominant-emotion-text" style="font-family: var(--font-hud); font-size: 0.95rem; font-weight: 700; color: var(--cyan-hud);">CALM / NEUTRAL</span>
+                    <h2 class="font-title-sm text-lg text-on-surface font-semibold">Live Data Stream Analysis</h2>
+                    <div class="flex gap-2 items-center text-xs font-data-mono text-secondary mt-1">
+                        <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                        <span>NOMINAL MULTIMODAL CAPTURE</span>
                     </div>
-                    <div id="dominant-emotion-conf" style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); margin-bottom: 12px;">CONFIDENCE: 84%</div>
+                </div>
+                <div class="font-data-mono text-xs text-on-surface-variant">ISRO BHARTIYA ANTARIKSH STATION</div>
+            </div>
 
-                    <div class="emotion-bars-container">
-                        <div class="emotion-bar-row">
-                            <span style="color: #10b981;">Happy / Uplifted</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-happy" class="emotion-bar-fill" style="background: #10b981; width: 10%;"></div></div>
-                            <span id="bar-val-happy" style="color: var(--text-dim);">10%</span>
+            <div class="grid grid-cols-12 gap-4">
+                <!-- 1. Facial Emotion (FER) -->
+                <div class="col-span-12 lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-DEFAULT flex flex-col p-4">
+                    <div class="border-b border-outline-variant pb-2 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-base">face</span>
+                        <span class="font-label-caps text-xs font-bold text-on-surface uppercase">Facial Emotion (FER)</span>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <div class="flex justify-between text-xs font-data-mono">
+                            <span class="text-on-surface-variant">Happy / Uplifted</span>
+                            <span id="analysis-val-happy">10.0%</span>
                         </div>
-                        <div class="emotion-bar-row">
-                            <span style="color: #00f0ff;">Calm / Neutral</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-neutral" class="emotion-bar-fill" style="background: #00f0ff; width: 70%;"></div></div>
-                            <span id="bar-val-neutral" style="color: var(--text-dim);">70%</span>
+                        <div class="w-full bg-surface-container-lowest h-1.5 rounded"><div id="analysis-bar-happy" class="h-full bg-secondary" style="width: 10%"></div></div>
+
+                        <div class="flex justify-between text-xs font-data-mono">
+                            <span class="text-on-surface-variant">Calm / Neutral</span>
+                            <span id="analysis-val-neutral">70.0%</span>
                         </div>
-                        <div class="emotion-bar-row">
-                            <span style="color: #f59e0b;">Stressed / Overload</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-stressed" class="emotion-bar-fill" style="background: #f59e0b; width: 5%;"></div></div>
-                            <span id="bar-val-stressed" style="color: var(--text-dim);">5%</span>
+                        <div class="w-full bg-surface-container-lowest h-1.5 rounded"><div id="analysis-bar-neutral" class="h-full bg-primary" style="width: 70%"></div></div>
+
+                        <div class="flex justify-between text-xs font-data-mono">
+                            <span class="text-on-surface-variant">Stressed / Overload</span>
+                            <span id="analysis-val-stressed">5.0%</span>
                         </div>
-                        <div class="emotion-bar-row">
-                            <span style="color: #8b5cf6;">Fatigued / Drowsy</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-fatigued" class="emotion-bar-fill" style="background: #8b5cf6; width: 5%;"></div></div>
-                            <span id="bar-val-fatigued" style="color: var(--text-dim);">5%</span>
+                        <div class="w-full bg-surface-container-lowest h-1.5 rounded"><div id="analysis-bar-stressed" class="h-full bg-tertiary" style="width: 5%"></div></div>
+
+                        <div class="flex justify-between text-xs font-data-mono">
+                            <span class="text-on-surface-variant">Fatigued / Drowsy</span>
+                            <span id="analysis-val-fatigued">5.0%</span>
                         </div>
-                        <div class="emotion-bar-row">
-                            <span style="color: #f97316;">Anxious / Tense</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-anxious" class="emotion-bar-fill" style="background: #f97316; width: 4%;"></div></div>
-                            <span id="bar-val-anxious" style="color: var(--text-dim);">4%</span>
+                        <div class="w-full bg-surface-container-lowest h-1.5 rounded"><div id="analysis-bar-fatigued" class="h-full bg-purple-400" style="width: 5%"></div></div>
+                    </div>
+                </div>
+
+                <!-- 2. Speech Emotion (SER) -->
+                <div class="col-span-12 lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-DEFAULT flex flex-col p-4">
+                    <div class="border-b border-outline-variant pb-2 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-base">mic</span>
+                        <span class="font-label-caps text-xs font-bold text-on-surface uppercase">Speech Emotion (SER)</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-data-mono mb-3">
+                        <div class="bg-surface border border-outline-variant p-2 flex flex-col">
+                            <span class="text-on-surface-variant text-[10px] uppercase">Pitch (F0)</span>
+                            <span id="ser-pitch-display" class="text-on-surface font-bold text-sm mt-1">132 Hz</span>
                         </div>
-                        <div class="emotion-bar-row">
-                            <span style="color: #3b82f6;">Sad / Isolated</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-sad" class="emotion-bar-fill" style="background: #3b82f6; width: 3%;"></div></div>
-                            <span id="bar-val-sad" style="color: var(--text-dim);">3%</span>
+                        <div class="bg-surface border border-outline-variant p-2 flex flex-col">
+                            <span class="text-on-surface-variant text-[10px] uppercase">Vocal Tension</span>
+                            <span id="ser-tension-display" class="text-secondary font-bold text-sm mt-1">8%</span>
                         </div>
-                        <div class="emotion-bar-row">
-                            <span style="color: #ef4444;">Frustrated / Angry</span>
-                            <div class="emotion-bar-track"><div id="bar-fill-frustrated" class="emotion-bar-fill" style="background: #ef4444; width: 3%;"></div></div>
-                            <span id="bar-val-frustrated" style="color: var(--text-dim);">3%</span>
+                    </div>
+                    <div class="text-xs font-label-caps text-on-surface-variant mb-1">PROSODY STABILITY</div>
+                    <div class="bg-surface border border-outline-variant p-2 rounded text-xs font-data-mono text-secondary">
+                        ACOUSTIC JITTER: 0.015 (NOMINAL)
+                    </div>
+                </div>
+
+                <!-- 3. Text Sentiment (NLP) -->
+                <div class="col-span-12 lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-DEFAULT flex flex-col p-4">
+                    <div class="border-b border-outline-variant pb-2 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-tertiary text-base">notes</span>
+                        <span class="font-label-caps text-xs font-bold text-on-surface uppercase">Text Sentiment (NLP)</span>
+                    </div>
+                    <div class="bg-surface border border-outline-variant p-2.5 text-xs text-on-surface-variant font-body-md min-h-[100px] mb-3">
+                        Live speech transcription buffer is active and listening for mission vocabulary and cognitive overload markers.
+                    </div>
+                    <div class="flex justify-between items-center text-xs font-data-mono">
+                        <span class="font-label-caps text-on-surface-variant">VALENCE SCORE:</span>
+                        <span id="sentiment-valence-display" class="text-primary font-bold text-base">+0.25</span>
+                    </div>
+                </div>
+
+                <!-- 4. Multimodal Fusion Matrix -->
+                <div class="col-span-12 lg:col-span-8 bg-surface-container-low border border-outline-variant rounded-DEFAULT p-4">
+                    <div class="border-b border-outline-variant pb-2 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-base">hub</span>
+                        <span class="font-label-caps text-xs font-bold text-on-surface uppercase">Multimodal Fusion Matrix</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-data-mono">
+                        <div class="bg-surface border border-outline-variant p-3 flex flex-col items-center">
+                            <span class="text-on-surface-variant text-[10px]">GLOBAL CONFIDENCE</span>
+                            <span class="text-2xl font-bold text-secondary mt-1">89.2%</span>
+                        </div>
+                        <div class="bg-surface border border-outline-variant p-3 flex flex-col items-center">
+                            <span class="text-on-surface-variant text-[10px]">DISCORDANCE CHECK</span>
+                            <span class="text-sm font-bold text-secondary mt-2">CONCORDANT</span>
+                        </div>
+                        <div class="bg-surface border border-outline-variant p-3 flex flex-col items-center">
+                            <span class="text-on-surface-variant text-[10px]">ACTIVE MODALITIES</span>
+                            <span class="text-sm font-bold text-primary mt-2">3 OF 3 ACTIVE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. System Edge Telemetry -->
+                <div class="col-span-12 lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-DEFAULT p-4">
+                    <div class="border-b border-outline-variant pb-2 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-on-surface-variant text-base">memory</span>
+                        <span class="font-label-caps text-xs font-bold text-on-surface uppercase">Edge Device Telemetry</span>
+                    </div>
+                    <div class="flex flex-col gap-2 text-xs font-data-mono">
+                        <div class="flex justify-between py-1 border-b border-outline-variant/40">
+                            <span class="text-on-surface-variant">Inference Runtime</span>
+                            <span class="text-on-surface">ONNX / FastAPI</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-outline-variant/40">
+                            <span class="text-on-surface-variant">Pipeline Latency</span>
+                            <span class="text-secondary">24.5 ms</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-outline-variant/40">
+                            <span class="text-on-surface-variant">Offline Mode</span>
+                            <span class="text-secondary">100% STANDALONE</span>
                         </div>
                     </div>
                 </div>
             </div>
+        </main>
 
-            <!-- Guided Tactical Breathing Pacer (Intervention) -->
-            <div class="hud-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>🧘</span> Evidence-Based Tactical Pacer (Sama Vritti 4-4-4-4)
-                    </div>
-                    <div class="panel-badge">PARASYMPATHETIC RESET</div>
-                </div>
-
-                <div class="breathing-pacer-box">
-                    <div id="pacer-circle" class="pacer-circle">
-                        <span id="pacer-seconds">4</span>
-                    </div>
-                    <strong id="pacer-state" style="font-family: var(--font-hud); font-size: 1rem; color: var(--green-nominal);">
-                        INHALE (4s)
-                    </strong>
-                    <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
-                        Follow the orbital pacer to downregulate autonomic cortisol spikes.
-                    </div>
-                </div>
+        <!-- TAB 3: INTERVENTIONS -->
+        <main id="tab-interventions" class="tab-content flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="border-b border-outline-variant pb-3 mb-4">
+                <h2 class="font-title-sm text-lg text-on-surface font-semibold">Evidence-Based Clinical Interventions</h2>
+                <p class="text-xs text-on-surface-variant mt-1">Standardized psychological and physiological countermeasure protocols for Bhartiya Antariksh Station crew.</p>
             </div>
-
-        </section>
-
-        <!-- RIGHT COLUMN: CONVERSATIONAL AI & GROUND STATION ALERTS -->
-        <section class="right-column">
-
-            <!-- AI Companion Conversation Console -->
-            <div class="hud-panel" style="margin-bottom: 20px;">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>💬</span> MAITRI Space Companion AI
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for item in interventions %}
+                <div class="panel rounded-DEFAULT p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="bg-primary/20 text-primary px-2 py-0.5 rounded text-[10px] font-data-mono font-bold">{{ item.id }}</span>
+                            <span class="text-secondary text-xs font-data-mono">{{ item.duration_seconds }}s DURATION</span>
+                        </div>
+                        <h3 class="font-title-sm text-base font-bold text-on-surface">{{ item.name }}</h3>
+                        <div class="text-xs text-primary font-semibold mt-0.5 mb-2">{{ item.category }}</div>
+                        <p class="text-xs text-on-surface-variant mb-3">{{ item.description }}</p>
+                        <div class="bg-surface p-2.5 border border-outline-variant rounded-DEFAULT text-xs text-on-surface mb-3">
+                            <span class="text-secondary font-label-caps block mb-1 font-bold">VERBAL GUIDANCE SCRIPT:</span>
+                            <em class="text-on-surface-variant">"{{ item.verbal_guidance }}"</em>
+                        </div>
                     </div>
-                    <div class="panel-badge">OFFLINE LLM / TTS</div>
-                </div>
-
-                <div id="chat-messages" class="chat-messages-container">
-                    <div class="chat-bubble ai">
-                        <div class="chat-speaker-label">MAITRI AI COMPANION</div>
-                        <div>Welcome aboard Bhartiya Antariksh Station, Commander. All multimodal sensors are calibrated. I am monitoring your physiological and emotional wellness in real time. How are you feeling today?</div>
-                    </div>
-                </div>
-
-                <div class="chat-input-row">
-                    <input type="text" id="chat-input" class="chat-input" placeholder="Speak or type to MAITRI..." autocomplete="off">
-                    <button id="btn-voice-input" class="btn-secondary" title="Voice Input (Speech-to-Text)">
-                        🎤
+                    <button class="w-full bg-primary/20 border border-primary text-primary hover:bg-primary/30 py-1.5 rounded-DEFAULT text-xs font-label-caps uppercase font-bold transition-all" onclick="executeIntervention('{{ item.id }}')">
+                        EXECUTE ON ASTRONAUT HUD
                     </button>
-                    <button id="btn-send-chat" class="btn-primary" style="flex: 0 0 70px;">
-                        SEND
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+
+        <!-- TAB 4: ALERTS CENTER -->
+        <main id="tab-alerts" class="tab-content flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="flex justify-between items-end mb-4 border-b border-outline-variant pb-3">
+                <div>
+                    <h2 class="font-title-sm text-lg text-on-surface font-semibold">ISRO Ground Alert Center</h2>
+                    <p class="font-data-mono text-xs text-on-surface-variant">UPLINK STATUS: <span class="text-tertiary-fixed">IDRSS DATA RELAY ACTIVE</span></p>
+                </div>
+                <button class="bg-error/20 border border-error text-error hover:bg-error/30 px-3 py-1.5 rounded-DEFAULT flex items-center gap-2 text-xs font-label-caps uppercase font-bold transition-all">
+                    <span class="material-symbols-outlined text-[16px]">emergency</span>
+                    INITIATE GROUND CRISIS PROTOCOL
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-8 panel rounded-DEFAULT p-4">
+                    <div class="flex justify-between items-center border-b border-outline-variant pb-2 mb-3">
+                        <h3 class="font-label-caps text-xs text-on-surface font-bold uppercase">Active & Queued Flight Alerts</h3>
+                        <span class="bg-surface px-2 py-0.5 rounded text-xs font-data-mono text-secondary">ISTRAC SYNCED</span>
+                    </div>
+                    <table class="w-full text-left border-collapse text-xs font-data-mono">
+                        <thead class="text-on-surface-variant border-b border-outline-variant">
+                            <tr>
+                                <th class="py-2">ALERT ID</th>
+                                <th class="py-2">TIMESTAMP</th>
+                                <th class="py-2">RISK TIER</th>
+                                <th class="py-2">EMOTION</th>
+                                <th class="py-2 text-right">COMMS STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alerts-table-body" class="divide-y divide-outline-variant/30">
+                            <tr class="data-row">
+                                <td class="py-2.5 text-primary">MAITRI-ALT-01</td>
+                                <td class="py-2.5 text-on-surface-variant">14:22:05 UTC</td>
+                                <td class="py-2.5 text-secondary">LVL 0: NOMINAL</td>
+                                <td class="py-2.5">CALM / NEUTRAL</td>
+                                <td class="py-2.5 text-right text-secondary">TRANSMITTED</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="lg:col-span-4 panel rounded-DEFAULT p-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-label-caps text-xs text-error font-bold uppercase mb-2">Ground Escalation Protocols</h3>
+                        <p class="text-xs text-on-surface-variant mb-3">When Risk Score exceeds Level 2 (51.0), MAITRI packages and encrypts real-time psychological telemetry for ground station flight surgeons.</p>
+                        <div class="bg-surface p-2.5 border border-outline-variant rounded-DEFAULT text-xs font-data-mono flex flex-col gap-1 text-on-surface-variant">
+                            <div>• Auto-generates structured JSON packet</div>
+                            <div>• Logs PERCLOS and vocal tremor metrics</div>
+                            <div>• Transmits via S-Band IDRSS link</div>
+                        </div>
+                    </div>
+                    <button class="mt-4 w-full bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface py-2 rounded-DEFAULT text-xs font-label-caps uppercase font-semibold">
+                        DOWNLOAD ENCRYPTED TELEMETRY LOG
                     </button>
                 </div>
             </div>
+        </main>
 
-            <!-- ISRO Ground Station Alert Dispatcher -->
-            <div class="hud-panel">
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span>📡</span> Ground Station Alert Buffer
-                    </div>
-                    <div id="alert-count-badge" class="panel-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444;">
-                        0 QUEUED
-                    </div>
+        <!-- TAB 5: SESSION LOGS & ANALYTICS -->
+        <main id="tab-sessions" class="tab-content flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="border-b border-outline-variant pb-3 mb-4">
+                <h2 class="font-title-sm text-lg text-on-surface font-semibold">Flight Session Telemetry & Historical Trends</h2>
+                <p class="text-xs text-on-surface-variant mt-1">Longitudinal psychological and biometric records logged locally to SQLite flight database.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="panel rounded-DEFAULT p-4 flex flex-col">
+                    <span class="text-xs font-label-caps text-on-surface-variant uppercase">Sleep Quality Index</span>
+                    <span class="text-2xl font-data-mono font-bold text-secondary mt-1">78.5%</span>
+                    <div class="w-full bg-surface h-1.5 rounded-full overflow-hidden mt-2"><div class="bg-secondary h-full" style="width: 78%"></div></div>
                 </div>
-
-                <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px;">
-                    Telemetry packets automatically queued for ISTRAC ground flight surgeon upon Risk Level &ge; 2:
+                <div class="panel rounded-DEFAULT p-4 flex flex-col">
+                    <span class="text-xs font-label-caps text-on-surface-variant uppercase">Average Heart Rate (BPM)</span>
+                    <span class="text-2xl font-data-mono font-bold text-on-surface mt-1">68 BPM</span>
+                    <div class="w-full bg-surface h-1.5 rounded-full overflow-hidden mt-2"><div class="bg-primary h-full" style="width: 68%"></div></div>
                 </div>
-
-                <div id="alert-feed-list" class="alert-feed-list">
-                    <div style="color: var(--text-dim); font-size: 0.82rem; text-align: center; padding: 20px 0;">
-                        No active critical alerts. Station telemetry nominal.
-                    </div>
+                <div class="panel rounded-DEFAULT p-4 flex flex-col">
+                    <span class="text-xs font-label-caps text-on-surface-variant uppercase">Intervention Success Rate</span>
+                    <span class="text-2xl font-data-mono font-bold text-secondary mt-1">92.4%</span>
+                    <div class="w-full bg-surface h-1.5 rounded-full overflow-hidden mt-2"><div class="bg-secondary h-full" style="width: 92%"></div></div>
                 </div>
             </div>
 
-        </section>
+            <div class="panel rounded-DEFAULT p-4">
+                <h3 class="font-label-caps text-xs text-on-surface-variant uppercase font-bold mb-3">Recent Telemetry Flight Records</h3>
+                <div id="session-telemetry-logs" class="flex flex-col gap-2 font-data-mono text-xs">
+                    <div class="p-2.5 bg-surface border-l-4 border-secondary border border-outline-variant flex justify-between items-center">
+                        <div>
+                            <strong class="text-on-surface">NOMINAL ORBITAL FLIGHT CHECK</strong>
+                            <div class="text-[11px] text-on-surface-variant mt-0.5">Biometrics stable. No interventions required.</div>
+                        </div>
+                        <span class="text-secondary text-[11px]">T-00:05:00</span>
+                    </div>
+                </div>
+            </div>
+        </main>
 
-    </main>
+        <!-- TAB 6: ASTRONAUT PROFILE -->
+        <main id="tab-profile" class="tab-content flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="border-b border-outline-variant pb-3 mb-4">
+                <h2 class="font-title-sm text-lg text-on-surface font-semibold">Astronaut Baseline Profile Calibration</h2>
+                <p class="text-xs text-on-surface-variant mt-1">Individualized psychological baselines, vocal F0 frequencies, and clinical coping preferences.</p>
+            </div>
 
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for crew in crew_profiles %}
+                <div class="panel rounded-DEFAULT p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary text-xl">person</span>
+                            </div>
+                            <div>
+                                <h3 class="font-title-sm text-sm font-bold text-on-surface">{{ crew.name }}</h3>
+                                <div class="text-[11px] font-data-mono text-secondary">{{ crew.callsign }} | {{ crew.role }}</div>
+                            </div>
+                        </div>
+                        <div class="bg-surface p-2.5 border border-outline-variant rounded-DEFAULT text-xs font-data-mono flex flex-col gap-1 mb-3">
+                            <div class="flex justify-between">
+                                <span class="text-on-surface-variant">Resting HR:</span>
+                                <span class="text-on-surface">{{ crew.baseline_vitals.resting_heart_rate_bpm }} BPM</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-on-surface-variant">Base Vocal F0:</span>
+                                <span class="text-on-surface">{{ crew.baseline_vitals.mean_f0_pitch_hz }} Hz</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-on-surface-variant">Base Eye EAR:</span>
+                                <span class="text-on-surface">{{ crew.baseline_vitals.resting_ear }}</span>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-on-surface-variant font-label-caps mb-1 font-bold">COPING PREFERENCES:</div>
+                        <ul class="list-disc list-inside text-xs text-on-surface-variant mb-4 font-body-md">
+                            {% for pref in crew.coping_preferences %}
+                            <li>{{ pref }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <button class="w-full bg-primary/20 border border-primary text-primary hover:bg-primary/30 py-1.5 rounded-DEFAULT text-xs font-label-caps uppercase font-bold" onclick="selectCrewById('{{ crew.astronaut_id }}')">
+                        ACTIVATE AS ACTIVE CREW LOCK
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Client JS -->
     <script src="/static/js/app.js"></script>
+    <script>
+        // Tab Navigation Logic
+        const tabButtons = document.querySelectorAll('.nav-tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const pageTitleDisplay = document.getElementById('page-title-display');
+        
+        const titles = {
+            'dashboard': 'Primary Astronaut Well-Being Dashboard',
+            'analysis': 'Detailed Multimodal Telemetry & Analysis',
+            'interventions': 'Evidence-Based Clinical Interventions',
+            'alerts': 'ISRO Ground Alert Center & Comms Uplink',
+            'sessions': 'Session Analytics & Historical Flight Logs',
+            'profile': 'Astronaut Baseline Profile Calibration'
+        };
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                
+                // Switch active button styles
+                tabButtons.forEach(b => {
+                    b.classList.remove('border-l-2', 'border-primary', 'text-primary', 'bg-surface-container-high');
+                    b.classList.add('text-on-surface-variant', 'bg-transparent');
+                });
+                btn.classList.remove('text-on-surface-variant', 'bg-transparent');
+                btn.classList.add('border-l-2', 'border-primary', 'text-primary', 'bg-surface-container-high');
+
+                // Switch active tab view
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                const activeTab = document.getElementById(`tab-${targetTab}`);
+                if (activeTab) activeTab.classList.add('active');
+
+                // Update page title
+                if (pageTitleDisplay && titles[targetTab]) {
+                    pageTitleDisplay.innerText = titles[targetTab];
+                }
+            });
+        });
+
+        function selectCrewById(id) {
+            const selector = document.getElementById('crew-selector');
+            if (selector) {
+                selector.value = id;
+                selector.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function executeIntervention(id) {
+            // Trigger chat request with intervention execution
+            const chatInput = document.getElementById('chat-input');
+            const btnSend = document.getElementById('btn-send-chat');
+            if (chatInput && btnSend) {
+                chatInput.value = `Execute intervention protocol ${id}`;
+                btnSend.click();
+            }
+            // Switch to dashboard tab
+            document.querySelector('.nav-tab-btn[data-tab="dashboard"]').click();
+        }
+    </script>
 </body>
 </html>

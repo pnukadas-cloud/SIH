@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnVoiceInput = document.getElementById('btn-voice-input');
     const chatContainer = document.getElementById('chat-messages');
     
-    // Telemetry DOM Bindings
+    // Telemetry DOM Bindings (Dashboard Tab)
     const domEmotionText = document.getElementById('dominant-emotion-text');
     const domEmotionConf = document.getElementById('dominant-emotion-conf');
     const riskBadge = document.getElementById('risk-level-badge');
@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const pitchVal = document.getElementById('vital-pitch');
     const vocalTensionVal = document.getElementById('vital-vocal-tension');
     
-    const pacerCircle = document.getElementById('pacer-circle');
     const pacerState = document.getElementById('pacer-state');
     const pacerSeconds = document.getElementById('pacer-seconds');
     
@@ -45,17 +44,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertCountBadge = document.getElementById('alert-count-badge');
     const discordanceBanner = document.getElementById('discordance-banner');
     const discordanceText = document.getElementById('discordance-text');
+    const opticalLockBadge = document.getElementById('optical-lock-badge');
+    const alertsTableBody = document.getElementById('alerts-table-body');
+    const liveMissionClock = document.getElementById('live-mission-clock');
 
-    // Emotion Color Mapping
-    const emotionColors = {
-        'happy': '#10b981',
-        'neutral': '#00f0ff',
-        'stressed': '#f59e0b',
-        'fatigued': '#8b5cf6',
-        'anxious': '#f97316',
-        'sad': '#3b82f6',
-        'frustrated': '#ef4444'
-    };
+    // Analysis Tab Bindings
+    const serPitchDisplay = document.getElementById('ser-pitch-display');
+    const serTensionDisplay = document.getElementById('ser-tension-display');
+    const sentimentValenceDisplay = document.getElementById('sentiment-valence-display');
+    const attnWF = document.getElementById('attn-w-f');
+    const attnWV = document.getElementById('attn-w-v');
+    const attnWT = document.getElementById('attn-w-t');
+    const barFillFacial = document.getElementById('bar-fill-facial');
+    const barValFacial = document.getElementById('bar-val-facial');
+    const barFillSpeech = document.getElementById('bar-fill-speech');
+    const barValSpeech = document.getElementById('bar-val-speech');
+    const barFillText = document.getElementById('bar-fill-text');
+    const barValText = document.getElementById('bar-val-text');
 
     // State Variables
     let isCameraActive = false;
@@ -75,15 +80,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let livePitchHz = 0;
     let liveRmsEnergy = 0;
     let liveVocalTension = 0;
-    let liveBlinkCount = 0;
-    let liveYawnCount = 0;
-    let lastBlinkTime = 0;
-    let lastYawnTime = 0;
     let faceBox = null;
     let smoothEar = 0.30;
     let smoothMar = 0.20;
+    let missionStartTime = Date.now() - (4 * 3600 + 12 * 60 + 33) * 1000;
 
-    // 1. Initialize Continuous Speech Recognition (Web Speech API)
+    // 1. Live Mission Clock Ticker
+    setInterval(() => {
+        const elapsed = Math.floor((Date.now() - missionStartTime) / 1000);
+        const hrs = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        if (liveMissionClock) liveMissionClock.innerText = `T+${hrs}:${mins}:${secs}`;
+    }, 1000);
+
+    // 2. Initialize Continuous Speech Recognition (Web Speech API)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRec();
@@ -124,31 +135,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Toggle Continuous Voice Listening
-    btnToggleVoiceListen.addEventListener('click', () => {
-        if (!recognition) {
-            alert("Speech recognition not supported in this browser. Please type your message.");
-            return;
-        }
-        isContinuousListening = !isContinuousListening;
-        if (isContinuousListening) {
-            btnToggleVoiceListen.classList.add('active');
-            btnToggleVoiceListen.innerHTML = '🔴 LIVE VOICE: LISTENING';
-            try { recognition.start(); } catch(e) {}
-        } else {
-            btnToggleVoiceListen.classList.remove('active');
-            btnToggleVoiceListen.innerHTML = '🎙️ LIVE VOICE: OFF';
-            try { recognition.stop(); } catch(e) {}
-        }
-    });
+    if (btnToggleVoiceListen) {
+        btnToggleVoiceListen.addEventListener('click', () => {
+            if (!recognition) {
+                alert("Speech recognition not supported in this browser. Please type your message.");
+                return;
+            }
+            isContinuousListening = !isContinuousListening;
+            if (isContinuousListening) {
+                btnToggleVoiceListen.classList.add('bg-error/20', 'border-error', 'text-error');
+                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span><span>VOICE: ON</span>';
+                try { recognition.start(); } catch(e) {}
+            } else {
+                btnToggleVoiceListen.classList.remove('bg-error/20', 'border-error', 'text-error');
+                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span><span>VOICE: OFF</span>';
+                try { recognition.stop(); } catch(e) {}
+            }
+        });
+    }
 
-    // 2. Camera Toggle & Live Stream Start
-    btnToggleCamera.addEventListener('click', async () => {
-        if (!isCameraActive) {
-            await startLiveCamera();
-        } else {
-            stopLiveCamera();
-        }
-    });
+    // 3. Camera Toggle & Live Stream Start
+    if (btnToggleCamera) {
+        btnToggleCamera.addEventListener('click', async () => {
+            if (!isCameraActive) {
+                await startLiveCamera();
+            } else {
+                stopLiveCamera();
+            }
+        });
+    }
 
     async function startLiveCamera() {
         try {
@@ -159,19 +174,15 @@ document.addEventListener('DOMContentLoaded', () => {
             videoElem.srcObject = mediaStream;
             await videoElem.play();
             isCameraActive = true;
-            btnToggleCamera.innerHTML = '🛑 STOP OPTICAL';
-            btnToggleCamera.classList.add('active');
+            btnToggleCamera.innerHTML = '<span class="material-symbols-outlined text-[16px]">videocam_off</span><span>STOP OPTICAL</span>';
+            btnToggleCamera.classList.add('bg-error/20', 'border-error', 'text-error');
 
-            // Start Live Audio Analyser
             initAudioAnalyser(mediaStream);
-
-            // Start 30 FPS Canvas Rendering Loop
             renderLiveHudCanvas();
-
-            // Start Periodic Backend Multimodal Fusion (~4 FPS)
             streamInterval = setInterval(sendFrameToBackend, 250);
+            if (opticalLockBadge) opticalLockBadge.innerText = "OPTICAL TRACKING LOCKED";
         } catch (err) {
-            alert("Camera/Microphone access error: " + err.message + "\nTip: You can also use the Flight Simulation Scenario buttons at the top to test with synthetic live data.");
+            alert("Camera/Microphone access error: " + err.message + "\nTip: Use the Flight Simulation Scenarios at the top to test live multimodal data!");
         }
     }
 
@@ -183,15 +194,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (animFrameId) cancelAnimationFrame(animFrameId);
         videoElem.srcObject = null;
         isCameraActive = false;
-        btnToggleCamera.innerHTML = '📹 START REAL-TIME OPTICAL';
-        btnToggleCamera.classList.remove('active');
+        btnToggleCamera.innerHTML = '<span class="material-symbols-outlined text-[16px]">videocam</span><span>START OPTICAL</span>';
+        btnToggleCamera.classList.remove('bg-error/20', 'border-error', 'text-error');
         
-        // Clear canvas
         hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
         waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+        if (opticalLockBadge) opticalLockBadge.innerText = "OPTICAL STANDBY";
     }
 
-    // 3. High-Frequency Real-Time Audio Prosody Analyser (Web Audio API)
+    // 4. Real-Time Audio Prosody Analyser
     function initAudioAnalyser(stream) {
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -207,15 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Autocorrelation Pitch (F0) detector in JavaScript
     function detectPitchAutocorr(buffer, sampleRate) {
         let size = buffer.length;
         let sumOfSquares = 0;
-        for (let i = 0; i < size; i++) {
-            sumOfSquares += buffer[i] * buffer[i];
-        }
+        for (let i = 0; i < size; i++) sumOfSquares += buffer[i] * buffer[i];
         let rms = Math.sqrt(sumOfSquares / size);
-        if (rms < 0.015) return -1; // Silence
+        if (rms < 0.015) return -1;
 
         let r1 = 0, r2 = size - 1, thres = 0.2;
         for (let i = 0; i < size / 2; i++) {
@@ -230,9 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let c = new Array(size).fill(0);
         for (let i = 0; i < size; i++) {
-            for (let j = 0; j < size - i; j++) {
-                c[i] += buffer[j] * buffer[j + i];
-            }
+            for (let j = 0; j < size - i; j++) c[i] += buffer[j] * buffer[j + i];
         }
 
         let d = 0;
@@ -245,13 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         let T0 = maxpos;
-        if (T0 > 0) {
-            return sampleRate / T0;
-        }
+        if (T0 > 0) return sampleRate / T0;
         return -1;
     }
 
-    // 4. Smooth 30 FPS HUD Canvas Rendering Loop
+    // 5. Smooth 30 FPS Canvas Rendering
     function renderLiveHudCanvas() {
         if (!isCameraActive) return;
         animFrameId = requestAnimationFrame(renderLiveHudCanvas);
@@ -261,21 +265,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const w = hudCanvas.width;
         const h = hudCanvas.height;
 
-        // Draw live video
         hudCtx.drawImage(videoElem, 0, 0, w, h);
 
-        // Compute simulated/client face tracking coordinates if face box not yet set
         if (!faceBox) {
             faceBox = { x: Math.floor(w * 0.28), y: Math.floor(h * 0.18), fw: Math.floor(w * 0.44), fh: Math.floor(h * 0.58) };
         }
 
-        // Draw Tactical HUD Corner Brackets
         const bx = faceBox.x, by = faceBox.y, bw = faceBox.fw, bh = faceBox.fh;
         const lineLen = Math.floor(bw * 0.22);
-        hudCtx.strokeStyle = '#00f0ff';
-        hudCtx.lineWidth = 3;
-        hudCtx.shadowColor = '#00f0ff';
-        hudCtx.shadowBlur = 8;
+        hudCtx.strokeStyle = '#4de082';
+        hudCtx.lineWidth = 2.5;
 
         // Top-Left
         hudCtx.beginPath();
@@ -305,28 +304,23 @@ document.addEventListener('DOMContentLoaded', () => {
         hudCtx.lineTo(bx + bw, by + bh - lineLen);
         hudCtx.stroke();
 
-        hudCtx.shadowBlur = 0;
+        // Landmark points
+        hudCtx.fillStyle = '#4de082';
+        hudCtx.fillRect(bx + bw * 0.32 - 2, by + bh * 0.36 - 2, 5, 5);
+        hudCtx.fillRect(bx + bw * 0.68 - 2, by + bh * 0.36 - 2, 5, 5);
+        hudCtx.fillStyle = '#c6bfff';
+        hudCtx.fillRect(bx + bw * 0.50 - 2, by + bh * 0.54 - 2, 4, 4);
+        hudCtx.fillStyle = '#eec200';
+        hudCtx.fillRect(bx + bw * 0.50 - 5, by + bh * 0.74 - 2, 10, 4);
 
-        // Draw Facial Landmark Points
-        hudCtx.fillStyle = '#10b981';
-        // Eyes
-        hudCtx.fillRect(bx + bw * 0.30 - 3, by + bh * 0.35 - 3, 6, 6);
-        hudCtx.fillRect(bx + bw * 0.70 - 3, by + bh * 0.35 - 3, 6, 6);
-        // Nose bridge
-        hudCtx.fillStyle = '#00f0ff';
-        hudCtx.fillRect(bx + bw * 0.50 - 2, by + bh * 0.52 - 2, 5, 5);
-        // Mouth
-        hudCtx.fillStyle = '#f59e0b';
-        hudCtx.fillRect(bx + bw * 0.50 - 6, by + bh * 0.76 - 2, 12, 4);
+        // Header Overlay Box
+        hudCtx.fillStyle = 'rgba(11, 14, 20, 0.85)';
+        hudCtx.fillRect(bx, Math.max(0, by - 24), bw, 22);
+        hudCtx.fillStyle = '#4de082';
+        hudCtx.font = '500 11px "JetBrains Mono", monospace';
+        hudCtx.fillText(`68_LNDMK // EAR:${smoothEar.toFixed(2)} MAR:${smoothMar.toFixed(2)}`, bx + 6, Math.max(15, by - 8));
 
-        // Header Overlay
-        hudCtx.fillStyle = 'rgba(6, 9, 19, 0.85)';
-        hudCtx.fillRect(bx, Math.max(0, by - 26), bw, 24);
-        hudCtx.fillStyle = '#00f0ff';
-        hudCtx.font = 'bold 12px "Orbitron", monospace';
-        hudCtx.fillText(`OPTICAL LOCK | EAR: ${smoothEar.toFixed(2)} MAR: ${smoothMar.toFixed(2)}`, bx + 8, Math.max(16, by - 8));
-
-        // Real-Time Audio Prosody Calculations (at 30 FPS)
+        // Audio calculations
         if (audioAnalyser && audioTimeData) {
             audioAnalyser.getFloatTimeDomainData(audioTimeData);
             let sumSq = 0;
@@ -336,17 +330,19 @@ document.addEventListener('DOMContentLoaded', () => {
             let pitch = detectPitchAutocorr(audioTimeData, audioContext.sampleRate);
             if (pitch > 60 && pitch < 450) {
                 livePitchHz = Math.round(pitch);
-                pitchVal.innerText = `${livePitchHz} Hz`;
+                if (pitchVal) pitchVal.innerText = `${livePitchHz} Hz`;
+                if (serPitchDisplay) serPitchDisplay.innerText = `${livePitchHz} Hz`;
                 liveVocalTension = Math.min(100, Math.max(5, Math.round((livePitchHz > 200 ? (livePitchHz - 180) * 0.8 : 8) + (liveRmsEnergy * 80))));
-                vocalTensionVal.innerText = `${liveVocalTension}%`;
+                if (vocalTensionVal) vocalTensionVal.innerText = `${liveVocalTension}%`;
+                if (serTensionDisplay) serTensionDisplay.innerText = `${liveVocalTension}%`;
             }
 
-            // Draw Audio Waveform
+            // Audio Waveform
             audioAnalyser.getByteTimeDomainData(audioDataArray);
-            waveformCtx.fillStyle = '#020408';
+            waveformCtx.fillStyle = '#0B0E14';
             waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-            waveformCtx.lineWidth = 2;
-            waveformCtx.strokeStyle = liveRmsEnergy > 0.04 ? '#10b981' : '#00f0ff';
+            waveformCtx.lineWidth = 1.5;
+            waveformCtx.strokeStyle = liveRmsEnergy > 0.04 ? '#4de082' : '#c6bfff';
             waveformCtx.beginPath();
 
             const sliceWidth = waveformCanvas.width * 1.0 / audioDataArray.length;
@@ -363,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 5. Send Frame to Backend Multimodal Engine (~4 FPS)
+    // 6. Send Frame to Backend Multimodal Engine (~4 FPS)
     async function sendFrameToBackend() {
         if (!isCameraActive || isProcessingBackend) return;
         isProcessingBackend = true;
@@ -382,13 +378,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     image_base64: b64Image,
                     transcript: currentSpeechText,
-                    astronaut_id: crewSelector.value
+                    astronaut_id: crewSelector ? crewSelector.value : 'CREW-BAS-01'
                 })
             });
             const telemetry = await resp.json();
             updateDashboardTelemetry(telemetry);
 
-            // Update smooth EAR & MAR from backend
             if (telemetry.vision) {
                 if (telemetry.vision.face_bounding_box) {
                     const scaleX = (videoElem.videoWidth || 640) / 320;
@@ -410,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 6. Update Dashboard Telemetry UI
+    // 7. Update Dashboard Telemetry UI
     function updateDashboardTelemetry(data) {
         if (!data) return;
 
@@ -418,51 +413,86 @@ document.addEventListener('DOMContentLoaded', () => {
         const fusion = data.fusion || {};
         const domEmotion = fusion.dominant_emotion || 'neutral';
         const confidence = fusion.confidence || 0.0;
-        const color = emotionColors[domEmotion] || '#00f0ff';
 
-        domEmotionText.innerText = domEmotion.toUpperCase();
-        domEmotionText.style.color = color;
-        domEmotionConf.innerText = `CONFIDENCE: ${(confidence * 100).toFixed(0)}%`;
+        if (domEmotionText) {
+            domEmotionText.innerText = domEmotion.toUpperCase();
+            domEmotionText.className = `font-headline-md text-xl font-bold leading-none ${domEmotion === 'stressed' || domEmotion === 'frustrated' ? 'text-error' : (domEmotion === 'fatigued' ? 'text-tertiary' : 'text-primary')}`;
+        }
+        if (domEmotionConf) domEmotionConf.innerText = `${(confidence * 100).toFixed(0)}%`;
 
-        // Update 7 Emotion Bars
+        // Update Multimodal Fusion Bars
+        const fer = data.fer || {};
+        const ser = data.ser || {};
+        const textNlp = data.text_sentiment || {};
+
+        const ferConf = Math.round((fer.confidence || 0.78) * 100);
+        const serConf = Math.round((ser.confidence || 0.65) * 100);
+        const textConf = Math.round((textNlp.confidence || 0.60) * 100);
+
+        if (barFillFacial) barFillFacial.style.width = `${ferConf}%`;
+        if (barValFacial) barValFacial.innerText = `${ferConf}%`;
+        if (barFillSpeech) barFillSpeech.style.width = `${serConf}%`;
+        if (barValSpeech) barValSpeech.innerText = `${serConf}%`;
+        if (barFillText) barFillText.style.width = `${textConf}%`;
+        if (barValText) barValText.innerText = `${textConf}%`;
+
+        // Update Attention Weights
+        const attn = fusion.attention_weights || {};
+        if (attnWF) attnWF.innerText = `F:${Math.round((attn.facial_alpha || 0.4) * 100)}%`;
+        if (attnWV) attnWV.innerText = `V:${Math.round((attn.speech_beta || 0.35) * 100)}%`;
+        if (attnWT) attnWT.innerText = `T:${Math.round((attn.linguistic_gamma || 0.25) * 100)}%`;
+
+        // Analysis Tab Breakdown
         const probs = fusion.fused_probabilities || {};
         for (const [emo, p] of Object.entries(probs)) {
-            const fillElem = document.getElementById(`bar-fill-${emo}`);
-            const valElem = document.getElementById(`bar-val-${emo}`);
-            if (fillElem) fillElem.style.width = `${Math.min(100, p * 100)}%`;
-            if (valElem) valElem.innerText = `${(p * 100).toFixed(0)}%`;
+            const valEl = document.getElementById(`analysis-val-${emo}`);
+            const barEl = document.getElementById(`analysis-bar-${emo}`);
+            if (valEl) valEl.innerText = `${(p * 100).toFixed(1)}%`;
+            if (barEl) barEl.style.width = `${Math.min(100, p * 100)}%`;
+        }
+
+        // Sentiment Valence
+        if (sentimentValenceDisplay && textNlp.valence !== undefined) {
+            sentimentValenceDisplay.innerText = textNlp.valence >= 0 ? `+${textNlp.valence.toFixed(2)}` : `${textNlp.valence.toFixed(2)}`;
         }
 
         // Risk Assessment
         const risk = data.risk_assessment || {};
         const riskScore = risk.risk_score || 0.0;
         const tierName = risk.tier_name || 'LEVEL 0: NOMINAL';
-        const riskColor = risk.color_hex || '#10b981';
+        const riskColor = risk.color_hex || '#4de082';
 
-        riskScoreVal.innerText = riskScore.toFixed(1);
-        riskScoreVal.style.color = riskColor;
-        riskBadge.innerText = tierName;
-        riskBadge.style.backgroundColor = riskColor + '25';
-        riskBadge.style.borderColor = riskColor;
-        riskBadge.style.color = riskColor;
-        riskBarFill.style.width = `${riskScore}%`;
-        riskBarFill.style.backgroundColor = riskColor;
+        if (riskScoreVal) {
+            riskScoreVal.innerText = riskScore.toFixed(1);
+            riskScoreVal.className = `font-display-lg text-3xl font-bold ${riskScore > 70 ? 'text-error' : (riskScore > 30 ? 'text-tertiary' : 'text-secondary')}`;
+        }
+        if (riskBadge) {
+            riskBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${riskScore > 70 ? 'bg-error animate-pulse' : (riskScore > 30 ? 'bg-tertiary' : 'bg-secondary')}"></span><span class="font-label-caps text-[11px] font-semibold">${tierName}</span>`;
+        }
+        if (riskBarFill) {
+            riskBarFill.style.width = `${Math.max(5, riskScore)}%`;
+            riskBarFill.className = `h-full transition-all duration-400 ${riskScore > 70 ? 'bg-error' : (riskScore > 30 ? 'bg-tertiary' : 'bg-secondary')}`;
+        }
 
         // Physical Vitals
         const phys = data.physical_distress || {};
-        perclosVal.innerText = `${(phys.perclos_percentage || 0).toFixed(1)}%`;
-        blinkVal.innerText = `${(phys.blink_rate_bpm || 0).toFixed(0)} BPM`;
-        yawnVal.innerText = `${phys.yawns_per_min || data.vision?.yawns_per_min || 0} /min`;
-        painVal.innerText = `${(phys.pain_grimace_score || 0).toFixed(0)} / 100`;
-        fatigueLevelText.innerText = phys.fatigue_level || 'Nominal';
-        fatigueLevelText.style.color = phys.status_color === 'red' ? '#ef4444' : (phys.status_color === 'orange' ? '#f97316' : '#10b981');
+        if (perclosVal) perclosVal.innerText = `${(phys.perclos_percentage || 0).toFixed(1)}%`;
+        if (blinkVal) blinkVal.innerText = `${(phys.blink_rate_bpm || 16).toFixed(0)} BPM`;
+        if (yawnVal) yawnVal.innerText = `${phys.yawns_per_min || 0} /min`;
+        if (painVal) painVal.innerText = `${(phys.pain_grimace_score || 0).toFixed(0)} / 100`;
+        if (fatigueLevelText) {
+            fatigueLevelText.innerText = phys.fatigue_level ? phys.fatigue_level.toUpperCase() : 'NOMINAL';
+            fatigueLevelText.className = `${phys.status_color === 'red' ? 'text-error' : (phys.status_color === 'orange' ? 'text-tertiary' : 'text-secondary')} font-bold`;
+        }
 
         // Discordance Alert
-        if (fusion.cross_modal_discordance) {
-            discordanceBanner.style.display = 'block';
-            discordanceText.innerText = fusion.discordance_reason || 'Cross-modal tension detected.';
-        } else {
-            discordanceBanner.style.display = 'none';
+        if (discordanceBanner) {
+            if (fusion.cross_modal_discordance) {
+                discordanceBanner.classList.remove('hidden');
+                if (discordanceText) discordanceText.innerText = fusion.discordance_reason || 'Masked stress detected.';
+            } else {
+                discordanceBanner.classList.add('hidden');
+            }
         }
 
         // Ground Alerts
@@ -472,23 +502,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addGroundAlertItem(alert) {
+        if (!alertFeedList) return;
         const item = document.createElement('div');
-        item.className = `alert-item ${alert.risk_level === 2 ? 'moderate' : ''}`;
+        item.className = `p-2 bg-surface border-l-2 ${alert.risk_level >= 3 ? 'border-error' : 'border-tertiary'} flex flex-col gap-0.5`;
         item.innerHTML = `
-            <strong>🚨 ${alert.alert_id}</strong> [RISK ${alert.risk_level}]<br>
-            <small>${alert.timestamp} | ${alert.emotional_state.primary.toUpperCase()} | Fatigue: ${alert.physical_state.fatigue_level}</small><br>
-            <em>${alert.recommended_ground_action}</em>
+            <div class="flex justify-between items-center text-[10px]">
+                <strong class="${alert.risk_level >= 3 ? 'text-error' : 'text-tertiary'}">${alert.alert_id}</strong>
+                <span class="text-on-surface-variant">${alert.timestamp}</span>
+            </div>
+            <div class="text-[11px] text-on-surface">${alert.emotional_state.primary.toUpperCase()} | LVL ${alert.risk_level} (${alert.risk_score})</div>
+            <div class="text-[10px] text-on-surface-variant italic">${alert.recommended_ground_action}</div>
         `;
         alertFeedList.prepend(item);
-        alertCountBadge.innerText = parseInt(alertCountBadge.innerText || '0') + 1;
+        if (alertCountBadge) alertCountBadge.innerText = `${alertFeedList.children.length} QUEUED`;
+
+        // Also append to Alerts Table in Tab 4
+        if (alertsTableBody) {
+            const tr = document.createElement('tr');
+            tr.className = 'data-row border-b border-outline-variant/20';
+            tr.innerHTML = `
+                <td class="py-2.5 text-primary">${alert.alert_id}</td>
+                <td class="py-2.5 text-on-surface-variant">${alert.timestamp}</td>
+                <td class="py-2.5 ${alert.risk_level >= 3 ? 'text-error' : 'text-tertiary'}">LVL ${alert.risk_level} (${alert.risk_score})</td>
+                <td class="py-2.5">${alert.emotional_state.primary.toUpperCase()}</td>
+                <td class="py-2.5 text-right text-tertiary">QUEUED_S-BAND</td>
+            `;
+            alertsTableBody.prepend(tr);
+        }
     }
 
-    // 7. Chat Interaction & Speech Synthesis
+    // 8. Chat Interaction & Speech Synthesis
     async function sendChatMessage(text) {
         if (!text || !text.trim()) return;
 
         appendChatBubble('user', text);
-        chatInput.value = '';
+        if (chatInput) chatInput.value = '';
 
         try {
             const resp = await fetch('/api/interact', {
@@ -496,16 +544,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: text,
-                    astronaut_id: crewSelector.value
+                    astronaut_id: crewSelector ? crewSelector.value : 'CREW-BAS-01'
                 })
             });
             const data = await resp.json();
             appendChatBubble('ai', data.ai_response);
 
-            // Spoken voice playback via Web Speech TTS
+            // Spoken TTS playback
             speakWithBrowserTTS(data.ai_response);
 
-            // Auto-trigger Guided Breathing if relevant
             if (data.intervention && data.intervention.id === 'INT-BREATHE-01') {
                 startBreathingPacer();
             }
@@ -515,11 +562,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function appendChatBubble(speaker, text) {
+        if (!chatContainer) return;
         const bubble = document.createElement('div');
-        bubble.className = `chat-bubble ${speaker}`;
+        const isAi = speaker === 'ai';
+        bubble.className = `${isAi ? 'bg-surface border-outline-variant' : 'bg-surface-container-low border-outline-variant/60'} border rounded-DEFAULT p-2.5 ${isAi ? 'self-end' : 'self-start'} w-5/6`;
         bubble.innerHTML = `
-            <div class="chat-speaker-label">${speaker === 'ai' ? 'MAITRI AI COMPANION' : crewSelector.options[crewSelector.selectedIndex].text}</div>
-            <div>${text}</div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="font-label-caps text-[10px] ${isAi ? 'text-primary' : 'text-secondary'} font-bold">${isAi ? 'MAITRI AI' : 'CREW-01 (AUDIO)'}</span>
+                <span class="font-data-mono text-[10px] text-on-surface-variant">NOW</span>
+            </div>
+            <p class="text-on-surface text-xs ${isAi ? '' : 'italic'}">${text}</p>
         `;
         chatContainer.appendChild(bubble);
         chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -535,38 +587,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    btnSendChat.addEventListener('click', () => sendChatMessage(chatInput.value));
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendChatMessage(chatInput.value);
-    });
+    if (btnSendChat) btnSendChat.addEventListener('click', () => sendChatMessage(chatInput.value));
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage(chatInput.value);
+        });
+    }
 
-    btnVoiceInput.addEventListener('click', () => {
-        if (recognition) {
-            btnVoiceInput.classList.add('active');
-            try { recognition.start(); } catch(e) {}
-        } else {
-            alert("Speech recognition not supported in this browser. Please type your message.");
-        }
-    });
+    if (btnVoiceInput) {
+        btnVoiceInput.addEventListener('click', () => {
+            if (recognition) {
+                try { recognition.start(); } catch(e) {}
+            }
+        });
+    }
 
-    // 8. Tactical Box Breathing Pacer Logic
+    // 9. Tactical Box Breathing Pacer Logic
     let pacerInterval = null;
     function startBreathingPacer() {
         if (pacerInterval) clearInterval(pacerInterval);
-        let phase = 0; // 0: Inhale, 1: Hold, 2: Exhale, 3: Hold empty
+        let phase = 0;
         let count = 4;
 
         const phases = [
-            { name: "INHALE (4s)", action: "expand" },
-            { name: "HOLD (4s)", action: "expand" },
-            { name: "EXHALE (4s)", action: "contract" },
-            { name: "HOLD (4s)", action: "contract" }
+            { name: "INHALE", action: "expand" },
+            { name: "HOLD", action: "expand" },
+            { name: "EXHALE", action: "contract" },
+            { name: "HOLD", action: "contract" }
         ];
 
         pacerInterval = setInterval(() => {
-            pacerSeconds.innerText = count;
-            pacerState.innerText = phases[phase].name;
-            pacerCircle.className = `pacer-circle ${phases[phase].action}`;
+            if (pacerSeconds) pacerSeconds.innerText = `${count}s`;
+            if (pacerState) pacerState.innerText = phases[phase].name;
 
             count--;
             if (count < 1) {
@@ -577,12 +629,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     startBreathingPacer();
 
-    // 9. Flight Simulation Scenarios (Demo Controls)
+    // 10. Flight Simulation Scenarios (Demo Controls)
     const scenarioBtns = document.querySelectorAll('.btn-scenario');
     scenarioBtns.forEach(btn => {
         btn.addEventListener('click', async () => {
-            scenarioBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            scenarioBtns.forEach(b => b.classList.remove('border-primary', 'bg-primary/20'));
+            btn.classList.add('border-primary', 'bg-primary/20');
             const scenario = btn.getAttribute('data-scenario');
 
             try {
@@ -597,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             message: telemetry.transcript,
-                            astronaut_id: crewSelector.value
+                            astronaut_id: crewSelector ? crewSelector.value : 'CREW-BAS-01'
                         })
                     });
                     const chatData = await chatResp.json();
@@ -610,12 +662,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 10. Crew Selector Change
-    crewSelector.addEventListener('change', async () => {
-        await fetch('/api/crew/select', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ astronaut_id: crewSelector.value })
+    // 11. Crew Selector Change
+    if (crewSelector) {
+        crewSelector.addEventListener('change', async () => {
+            await fetch('/api/crew/select', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ astronaut_id: crewSelector.value })
+            });
         });
-    });
+    }
 });
