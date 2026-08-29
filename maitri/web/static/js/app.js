@@ -1,7 +1,7 @@
 /**
- * MAITRI — AI Well-Being System Client Logic
+ * MAITRI — AI Well-Being System Client Engine
  * ISRO Bhartiya Antariksh Station (BAS)
- * Clean, Modern Web Application Engine
+ * Multimodal Perception, Biometric Tracking, RBAC Console & Real-Time HUD
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSendChat = document.getElementById('btn-send-chat');
     const btnVoiceInput = document.getElementById('btn-voice-input');
     const chatContainer = document.getElementById('chat-messages');
+    const chatTypingIndicator = document.getElementById('chat-typing-indicator');
     
     // Telemetry Bindings (Dashboard)
     const domEmotionText = document.getElementById('dominant-emotion-text');
@@ -70,6 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const barFillText = document.getElementById('bar-fill-text');
     const barValText = document.getElementById('bar-val-text');
 
+    // Mathematical Breakdown Components
+    const compAffect = document.getElementById('comp-affect');
+    const compFatigue = document.getElementById('comp-fatigue');
+    const compTension = document.getElementById('comp-tension');
+
     // 24H Timeline SVG Elements
     const timelineValencePath = document.getElementById('timeline-valence-path');
     const timelineActiveNode = document.getElementById('timeline-active-node');
@@ -89,10 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let isProcessingBackend = false;
     let recognition = null;
     let currentSpeechText = "";
-    let ws = null; // Real-time WebSocket connection
-    const valenceBuffer = [58, 55, 60, 52, 48, 65, 50, 58, 62, 58]; // Rolling emotion buffer
+    let ws = null;
+    const valenceBuffer = [58, 55, 60, 52, 48, 65, 50, 58, 62, 58];
 
-    // Real-Time Biometrics Buffer
     let livePitchHz = 0;
     let liveRmsEnergy = 0;
     let liveVocalTension = 0;
@@ -103,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let stateStartTimestamp = Date.now() - (14 * 60 + 32) * 1000;
 
     // ---------------------------------------------------------
-    // 1. Mission Clock & State Duration Timers
+    // 1. Mission Clock & Timers
     // ---------------------------------------------------------
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - missionStartTime) / 1000);
@@ -119,7 +124,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
 
     // ---------------------------------------------------------
-    // 2. Speech Recognition (Web Speech API)
+    // 2. Camera & Microphone Permission State Management
+    // ---------------------------------------------------------
+    function updatePermissionUI(state, message) {
+        const banner = document.getElementById('media-permission-banner');
+        const iconContainer = document.getElementById('permission-icon-container');
+        const icon = document.getElementById('permission-icon');
+        const title = document.getElementById('permission-title');
+        const statusTag = document.getElementById('permission-status-tag');
+        const desc = document.getElementById('permission-description');
+        if (!banner) return;
+
+        if (state === 'granted') {
+            banner.className = 'web-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-emerald-500';
+            if (iconContainer) iconContainer.className = 'w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0';
+            if (icon) icon.innerText = 'check_circle';
+            if (title) title.innerText = 'Biometric Sensors: Active & Locked';
+            if (statusTag) {
+                statusTag.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+                statusTag.innerText = 'Permission Granted';
+            }
+            if (desc) desc.innerText = 'Continuous multimodal perception active (FACS Action Units AU04/06/12/20/43, EAR/MAR, PERCLOS, and F0 pitch).';
+        } else if (state === 'denied') {
+            banner.className = 'web-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-red-500';
+            if (iconContainer) iconContainer.className = 'w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0';
+            if (icon) icon.innerText = 'gpp_bad';
+            if (title) title.innerText = 'Sensor Permissions Blocked';
+            if (statusTag) {
+                statusTag.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-500/10 text-red-400 border border-red-500/30';
+                statusTag.innerText = 'Blocked in Browser';
+            }
+            if (desc) desc.innerText = 'Camera/Microphone access was denied. To enable: Click the lock icon next to the URL in your browser address bar, set Camera & Microphone to "Allow", and reload this page.';
+        } else if (state === 'unavailable') {
+            banner.className = 'web-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-amber-500';
+            if (iconContainer) iconContainer.className = 'w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0';
+            if (icon) icon.innerText = 'videocam_off';
+            if (title) title.innerText = 'No Camera/Microphone Device Detected';
+            if (statusTag) {
+                statusTag.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30';
+                statusTag.innerText = 'Device Unavailable';
+            }
+            if (desc) desc.innerText = 'Hardware capture devices not detected. You can use the 1-Click Flight Demonstration Scenarios above to test all perception pipelines.';
+        } else {
+            // Default / Not yet requested
+            banner.className = 'web-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-indigo-500';
+            if (iconContainer) iconContainer.className = 'w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0';
+            if (icon) icon.innerText = 'perm_camera_mic';
+            if (title) title.innerText = 'Biometric Sensor Stream';
+            if (statusTag) {
+                statusTag.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+                statusTag.innerText = 'Ready to Request';
+            }
+            if (desc) desc.innerText = 'Connect your webcam & microphone for real-time facial Action Units (FACS), blink tracking, and acoustic F0 prosody.';
+        }
+    }
+
+    async function checkExistingPermissions() {
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                const camStatus = await navigator.permissions.query({ name: 'camera' });
+                if (camStatus.state === 'granted') {
+                    updatePermissionUI('granted');
+                } else if (camStatus.state === 'denied') {
+                    updatePermissionUI('denied');
+                }
+            } catch(e) {}
+        }
+    }
+    checkExistingPermissions();
+
+    // ---------------------------------------------------------
+    // 3. Speech Recognition (Web Speech API)
     // ---------------------------------------------------------
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -163,26 +238,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnToggleVoiceListen) {
         btnToggleVoiceListen.addEventListener('click', () => {
             if (!recognition) {
-                alert("Speech recognition not supported in this browser. Please type your message.");
+                alert("Speech recognition is not supported in this browser. Please type your message.");
                 return;
             }
             isContinuousListening = !isContinuousListening;
             if (isContinuousListening) {
                 btnToggleVoiceListen.classList.remove('bg-dark-850', 'text-slate-200', 'border-slate-700');
                 btnToggleVoiceListen.classList.add('bg-red-600/20', 'border-red-500', 'text-red-400');
-                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[18px]">mic</span><span>Voice: On</span>';
+                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span><span>Voice: On</span>';
                 try { recognition.start(); } catch(e) {}
             } else {
                 btnToggleVoiceListen.classList.add('bg-dark-850', 'text-slate-200', 'border-slate-700');
                 btnToggleVoiceListen.classList.remove('bg-red-600/20', 'border-red-500', 'text-red-400');
-                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[18px]">mic</span><span>Voice: Off</span>';
+                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span><span>Voice: Off</span>';
                 try { recognition.stop(); } catch(e) {}
             }
         });
     }
 
     // ---------------------------------------------------------
-    // 3. Live Optical Camera & Audio Prosody Capture
+    // 4. Live Optical Camera & Audio Prosody Capture
     // ---------------------------------------------------------
     if (btnToggleCamera) {
         btnToggleCamera.addEventListener('click', async () => {
@@ -204,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await videoElem.play();
             isCameraActive = true;
             
-            btnToggleCamera.innerHTML = '<span class="material-symbols-outlined text-[18px]">videocam_off</span><span>Stop Camera</span>';
+            btnToggleCamera.innerHTML = '<span class="material-symbols-outlined text-[16px]">videocam_off</span><span>Stop Camera</span>';
             btnToggleCamera.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
             btnToggleCamera.classList.add('bg-red-600', 'hover:bg-red-500');
 
@@ -214,14 +289,22 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (opticalLockBadge) {
                 opticalLockBadge.innerText = "Camera Active";
-                opticalLockBadge.className = "px-2.5 py-1 text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full";
+                opticalLockBadge.className = "px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full";
             }
             if (gracefulDegradeStatus) {
                 gracefulDegradeStatus.innerText = "3 of 3 Modalities Active";
                 gracefulDegradeStatus.className = "text-xs font-semibold text-emerald-400";
             }
+            updatePermissionUI('granted');
         } catch (err) {
-            alert("Camera/Microphone access error: " + err.message + "\nTip: You can use the Simulation Scenarios buttons at the top for instant testing!");
+            console.warn("Camera/Mic access error:", err.name, err.message);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                updatePermissionUI('denied');
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                updatePermissionUI('unavailable');
+            } else {
+                updatePermissionUI('denied', err.message);
+            }
         }
     }
 
@@ -234,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         videoElem.srcObject = null;
         isCameraActive = false;
         
-        btnToggleCamera.innerHTML = '<span class="material-symbols-outlined text-[18px]">videocam</span><span>Start Camera</span>';
+        btnToggleCamera.innerHTML = '<span class="material-symbols-outlined text-[16px]">videocam</span><span>Start Camera</span>';
         btnToggleCamera.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
         btnToggleCamera.classList.remove('bg-red-600', 'hover:bg-red-500');
         
@@ -243,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (opticalLockBadge) {
             opticalLockBadge.innerText = "Camera Standby";
-            opticalLockBadge.className = "px-2.5 py-1 text-xs font-semibold bg-dark-850 border border-slate-800 text-slate-400 rounded-full";
+            opticalLockBadge.className = "px-2.5 py-0.5 text-xs font-semibold bg-dark-850 border border-slate-800 text-slate-400 rounded-full";
         }
         if (gracefulDegradeStatus) {
             gracefulDegradeStatus.innerText = "Audio + Text Active (Camera Standby)";
@@ -252,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------
-    // 4. Acoustic Prosody & Real-Time Pitch Extraction
+    // 5. Audio Waveform & Autocorrelation Pitch Extraction
     // ---------------------------------------------------------
     function initAudioAnalyser(stream) {
         try {
@@ -302,97 +385,90 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         let T0 = maxpos;
-        if (T0 > 0) return sampleRate / T0;
-        return -1;
+        return sampleRate / T0;
     }
 
-    // ---------------------------------------------------------
-    // 5. HUD Canvas Overlay Rendering
-    // ---------------------------------------------------------
     function renderLiveHudCanvas() {
-        if (!isCameraActive || !hudCtx) return;
+        if (!isCameraActive) return;
         animFrameId = requestAnimationFrame(renderLiveHudCanvas);
 
-        hudCanvas.width = videoElem.videoWidth || 640;
-        hudCanvas.height = videoElem.videoHeight || 480;
-        const w = hudCanvas.width;
-        const h = hudCanvas.height;
+        if (hudCanvas && hudCtx && videoElem.readyState === videoElem.HAVE_ENOUGH_DATA) {
+            hudCanvas.width = videoElem.videoWidth || 640;
+            hudCanvas.height = videoElem.videoHeight || 480;
 
-        // Draw live video frame
-        hudCtx.drawImage(videoElem, 0, 0, w, h);
+            hudCtx.drawImage(videoElem, 0, 0, hudCanvas.width, hudCanvas.height);
 
-        if (!faceBox) {
-            faceBox = { x: Math.floor(w * 0.28), y: Math.floor(h * 0.18), fw: Math.floor(w * 0.44), fh: Math.floor(h * 0.58) };
+            const w = hudCanvas.width;
+            const h = hudCanvas.height;
+
+            const boxW = faceBox ? faceBox.fw : Math.floor(w * 0.38);
+            const boxH = faceBox ? faceBox.fh : Math.floor(h * 0.52);
+            const boxX = faceBox ? faceBox.x : Math.floor((w - boxW) / 2);
+            const boxY = faceBox ? faceBox.y : Math.floor((h - boxH) / 2.2);
+
+            // Reticle Target Box
+            hudCtx.strokeStyle = "rgba(99, 102, 241, 0.7)";
+            hudCtx.lineWidth = 2;
+            hudCtx.strokeRect(boxX, boxY, boxW, boxH);
+
+            const len = 16;
+            hudCtx.strokeStyle = "#34D399";
+            hudCtx.lineWidth = 3;
+            hudCtx.beginPath();
+            hudCtx.moveTo(boxX, boxY + len); hudCtx.lineTo(boxX, boxY); hudCtx.lineTo(boxX + len, boxY);
+            hudCtx.moveTo(boxX + boxW - len, boxY); hudCtx.lineTo(boxX + boxW, boxY); hudCtx.lineTo(boxX + boxW, boxY + len);
+            hudCtx.moveTo(boxX, boxY + boxH - len); hudCtx.lineTo(boxX, boxY + boxH); hudCtx.lineTo(boxX + len, boxY + boxH);
+            hudCtx.moveTo(boxX + boxW - len, boxY + boxH); hudCtx.lineTo(boxX + boxW, boxY + boxH); hudCtx.lineTo(boxX + boxW, boxY + boxH - len);
+            hudCtx.stroke();
+
+            // Eye Landmark Circles
+            const eyeY = Math.floor(boxY + boxH * 0.35);
+            const leftEyeX = Math.floor(boxX + boxW * 0.30);
+            const rightEyeX = Math.floor(boxX + boxW * 0.70);
+            const eyeRad = Math.max(3, Math.floor(smoothEar * 16));
+
+            hudCtx.fillStyle = smoothEar < 0.20 ? "rgba(239, 68, 68, 0.8)" : "rgba(52, 211, 153, 0.8)";
+            hudCtx.beginPath();
+            hudCtx.arc(leftEyeX, eyeY, eyeRad, 0, 2 * Math.PI);
+            hudCtx.arc(rightEyeX, eyeY, eyeRad, 0, 2 * Math.PI);
+            hudCtx.fill();
+
+            // Mouth Landmark
+            const mouthY = Math.floor(boxY + boxH * 0.75);
+            const mouthX = Math.floor(boxX + boxW * 0.50);
+            const mouthRad = Math.max(3, Math.floor(smoothMar * 18));
+            hudCtx.fillStyle = smoothMar > 0.45 ? "rgba(245, 158, 11, 0.8)" : "rgba(99, 102, 241, 0.8)";
+            hudCtx.beginPath();
+            hudCtx.ellipse(mouthX, mouthY, mouthRad * 1.5, mouthRad, 0, 0, 2 * Math.PI);
+            hudCtx.fill();
+
+            hudCtx.font = "600 12px Inter, sans-serif";
+            hudCtx.fillStyle = "#F8FAFC";
+            hudCtx.fillText(`EAR: ${smoothEar.toFixed(2)}`, boxX + 6, boxY + 16);
+            hudCtx.fillText(`MAR: ${smoothMar.toFixed(2)}`, boxX + 6, boxY + 32);
+            if (hudEarMetric) hudEarMetric.innerText = smoothEar.toFixed(2);
         }
 
-        const bx = faceBox.x, by = faceBox.y, bw = faceBox.fw, bh = faceBox.fh;
-        const lineLen = Math.floor(bw * 0.2);
-
-        // Clean Modern Green/Indigo Target Box
-        hudCtx.strokeStyle = '#6366F1';
-        hudCtx.lineWidth = 2.5;
-
-        // Top-Left Corner
-        hudCtx.beginPath();
-        hudCtx.moveTo(bx, by + lineLen);
-        hudCtx.lineTo(bx, by);
-        hudCtx.lineTo(bx + lineLen, by);
-        hudCtx.stroke();
-
-        // Top-Right Corner
-        hudCtx.beginPath();
-        hudCtx.moveTo(bx + bw - lineLen, by);
-        hudCtx.lineTo(bx + bw, by);
-        hudCtx.lineTo(bx + bw, by + lineLen);
-        hudCtx.stroke();
-
-        // Bottom-Left Corner
-        hudCtx.beginPath();
-        hudCtx.moveTo(bx, by + bh - lineLen);
-        hudCtx.lineTo(bx, by + bh);
-        hudCtx.lineTo(bx + lineLen, by + bh);
-        hudCtx.stroke();
-
-        // Bottom-Right Corner
-        hudCtx.beginPath();
-        hudCtx.moveTo(bx + bw - lineLen, by + bh);
-        hudCtx.lineTo(bx + bw, by + bh);
-        hudCtx.lineTo(bx + bw, by + bh - lineLen);
-        hudCtx.stroke();
-
-        // Facial Landmark Dots
-        hudCtx.fillStyle = '#34D399';
-        hudCtx.fillRect(bx + bw * 0.33 - 2, by + bh * 0.36 - 2, 4, 4);
-        hudCtx.fillRect(bx + bw * 0.67 - 2, by + bh * 0.36 - 2, 4, 4);
-        hudCtx.fillStyle = '#818CF8';
-        hudCtx.fillRect(bx + bw * 0.50 - 2, by + bh * 0.54 - 2, 4, 4);
-        hudCtx.fillStyle = '#FBBF24';
-        hudCtx.fillRect(bx + bw * 0.50 - 5, by + bh * 0.74 - 2, 10, 3);
-
-        if (hudEarMetric) hudEarMetric.innerText = smoothEar.toFixed(2);
-
-        // Audio Waveform Render
-        if (audioAnalyser && audioTimeData && waveformCtx) {
+        // Draw Audio Waveform
+        if (waveformCanvas && waveformCtx && audioAnalyser) {
+            audioAnalyser.getByteTimeDomainData(audioDataArray);
             audioAnalyser.getFloatTimeDomainData(audioTimeData);
-            let sumSq = 0;
-            for (let i = 0; i < audioTimeData.length; i++) sumSq += audioTimeData[i] * audioTimeData[i];
-            liveRmsEnergy = Math.sqrt(sumSq / audioTimeData.length);
 
-            let pitch = detectPitchAutocorr(audioTimeData, audioContext.sampleRate);
+            const pitch = detectPitchAutocorr(audioTimeData, audioContext.sampleRate);
             if (pitch > 60 && pitch < 450) {
                 livePitchHz = Math.round(pitch);
                 if (pitchVal) pitchVal.innerText = `${livePitchHz} Hz`;
                 if (serPitchDisplay) serPitchDisplay.innerText = `${livePitchHz} Hz`;
-                liveVocalTension = Math.min(100, Math.max(5, Math.round((livePitchHz > 200 ? (livePitchHz - 180) * 0.8 : 8) + (liveRmsEnergy * 80))));
+                
+                liveVocalTension = Math.min(100, Math.max(0, Math.round(((livePitchHz - 128) / 80) * 100)));
                 if (vocalTensionVal) vocalTensionVal.innerText = `${liveVocalTension}%`;
                 if (serTensionDisplay) serTensionDisplay.innerText = `${liveVocalTension}%`;
             }
 
-            audioAnalyser.getByteTimeDomainData(audioDataArray);
-            waveformCtx.fillStyle = '#090D16';
+            waveformCtx.fillStyle = "#090D16";
             waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-            waveformCtx.lineWidth = 2;
-            waveformCtx.strokeStyle = liveRmsEnergy > 0.03 ? '#34D399' : '#6366F1';
+            waveformCtx.lineWidth = 1.5;
+            waveformCtx.strokeStyle = "#818CF8";
             waveformCtx.beginPath();
 
             const sliceWidth = waveformCanvas.width * 1.0 / audioDataArray.length;
@@ -423,7 +499,6 @@ document.addEventListener('DOMContentLoaded', () => {
         offCtx.drawImage(videoElem, 0, 0, 320, 240);
         const b64Image = offCanvas.toDataURL('image/jpeg', 0.65);
 
-        // If WebSocket is active and open, send frame over WS for sub-50ms latency
         if (ws && ws.readyState === WebSocket.OPEN) {
             try {
                 ws.send(JSON.stringify({
@@ -440,7 +515,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Fallback: REST API
         try {
             const resp = await fetch('/api/process_frame', {
                 method: 'POST',
@@ -488,21 +562,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (domEmotionText) {
             domEmotionText.innerText = domEmotion.charAt(0).toUpperCase() + domEmotion.slice(1);
-            domEmotionText.className = `text-3xl lg:text-4xl font-extrabold tracking-tight ${domEmotion === 'stressed' || domEmotion === 'frustrated' ? 'text-red-400' : (domEmotion === 'fatigued' ? 'text-amber-400' : 'text-white')}`;
+            domEmotionText.className = `text-3xl font-extrabold tracking-tight ${domEmotion === 'stressed' || domEmotion === 'frustrated' ? 'text-red-400' : (domEmotion === 'fatigued' ? 'text-amber-400' : 'text-white')}`;
         }
         if (domEmotionConf) domEmotionConf.innerText = `${(confidence * 100).toFixed(0)}%`;
 
         // Trend Badge
         if (emotionTrendBadge) {
             if (domEmotion === 'stressed' || domEmotion === 'frustrated') {
-                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-lg">trending_up</span><span>Worsening</span>';
-                emotionTrendBadge.className = 'px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-semibold text-sm flex items-center gap-1.5';
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_up</span><span>Worsening</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-semibold text-xs flex items-center gap-1.5';
             } else if (domEmotion === 'fatigued') {
-                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-lg">trending_up</span><span>Elevating</span>';
-                emotionTrendBadge.className = 'px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold text-sm flex items-center gap-1.5';
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_up</span><span>Elevating</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold text-xs flex items-center gap-1.5';
             } else {
-                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-lg">trending_flat</span><span>Stable</span>';
-                emotionTrendBadge.className = 'px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-sm flex items-center gap-1.5';
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_flat</span><span>Stable</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-xs flex items-center gap-1.5';
             }
         }
 
@@ -544,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (riskScoreVal) {
             riskScoreVal.innerText = riskScore.toFixed(1);
-            riskScoreVal.className = `text-4xl lg:text-5xl font-extrabold tracking-tight ${riskScore > 70 ? 'text-red-400' : (riskScore > 50 ? 'text-orange-400' : (riskScore > 30 ? 'text-amber-400' : 'text-emerald-400'))}`;
+            riskScoreVal.className = `text-4xl font-extrabold tracking-tight ${riskScore > 70 ? 'text-red-400' : (riskScore > 50 ? 'text-orange-400' : (riskScore > 30 ? 'text-amber-400' : 'text-emerald-400'))}`;
         }
         if (riskBadge) {
             const isL3 = riskScore > 70;
@@ -552,8 +626,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isL1 = riskScore > 30 && riskScore <= 50;
             const badgeClass = isL3 ? 'bg-red-500/10 border-red-500/30 text-red-400' : (isL2 ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' : (isL1 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'));
             const dotClass = isL3 ? 'bg-red-400' : (isL2 ? 'bg-orange-400' : (isL1 ? 'bg-amber-400' : 'bg-emerald-400'));
-            riskBadge.className = `px-4 py-2 rounded-xl border font-bold text-sm flex items-center gap-2 ${badgeClass}`;
-            riskBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full ${dotClass}"></span><span>${tierName}</span>`;
+            riskBadge.className = `px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 ${badgeClass}`;
+            riskBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotClass}"></span><span>${tierName}</span>`;
         }
         if (riskBarFill) {
             riskBarFill.style.width = `${Math.max(5, riskScore)}%`;
@@ -563,6 +637,12 @@ document.addEventListener('DOMContentLoaded', () => {
             riskHorizonStatus.innerText = riskScore > 70 ? 'Critical Severity' : (riskScore > 50 ? 'Moderate Alert' : 'Within Tolerance');
             riskHorizonStatus.className = `font-bold ${riskScore > 70 ? 'text-red-400' : (riskScore > 50 ? 'text-orange-400' : 'text-emerald-400')}`;
         }
+
+        // Mathematical Breakdown Component Updates
+        const components = (data.wellbeing && data.wellbeing.components) || {};
+        if (compAffect) compAffect.innerText = `${(components.negative_affect || 0).toFixed(1)} pts`;
+        if (compFatigue) compFatigue.innerText = `${(components.ocular_fatigue || 5.5).toFixed(1)} pts`;
+        if (compTension) compTension.innerText = `${(components.autonomic_tension || 7.0).toFixed(1)} pts`;
 
         // Physical Vitals
         const phys = data.physical_distress || {};
@@ -585,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Dynamic Rolling Emotion Timeline
+        // Dynamic Rolling Emotion Timeline with Authentic Score
         updateValenceTimeline(domEmotion, fusion.valence);
 
         // Ground Alerts
@@ -598,42 +678,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!alertFeedList) return;
         const item = document.createElement('div');
         const isCritical = alert.risk_level >= 3;
-        item.className = `p-4 bg-dark-850 border-l-4 ${isCritical ? 'border-red-500 bg-red-950/20' : 'border-amber-500 bg-amber-950/20'} rounded-xl border border-slate-800 flex flex-col gap-1.5 text-sm`;
+        item.className = `p-3 bg-dark-850 border-l-4 ${isCritical ? 'border-red-500' : 'border-amber-500'} rounded-xl border border-slate-800 flex flex-col gap-1 text-xs`;
         item.innerHTML = `
             <div class="flex justify-between items-center font-bold">
-                <span class="${isCritical ? 'text-red-400' : 'text-amber-400'}">${alert.alert_id} (Level ${alert.risk_level})</span>
-                <span class="text-xs px-2 py-0.5 rounded ${isCritical ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'} font-semibold">Queued</span>
+                <span class="text-slate-100">${alert.alert_id}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded ${isCritical ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'} font-semibold">
+                    ${isCritical ? 'CRITICAL' : 'ALERT'}
+                </span>
             </div>
-            <p class="text-xs text-slate-300 leading-relaxed">${alert.emotional_state.primary.toUpperCase()} · Fatigue: ${alert.physical_state.fatigue_level}</p>
-            <span class="text-[11px] text-slate-500 font-mono">${alert.timestamp} · S-Band Relay</span>
+            <p class="text-[11px] text-slate-300 leading-relaxed">${alert.reason || 'Telemetry threshold exceeded.'}</p>
+            <span class="text-[10px] text-slate-500 font-mono">Dispatched to Flight Surgeon</span>
         `;
         alertFeedList.prepend(item);
-        if (alertCountBadge) alertCountBadge.innerText = `${alertFeedList.children.length} Queued Alerts`;
-
-        if (alertsTableBody) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="py-4 font-bold text-indigo-400">${alert.alert_id}</td>
-                <td class="py-4 text-slate-400">${alert.timestamp}</td>
-                <td class="py-4"><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${isCritical ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}">Level ${alert.risk_level}</span></td>
-                <td class="py-4 text-slate-200">${alert.emotional_state.primary.toUpperCase()}</td>
-                <td class="py-4 text-amber-400 font-semibold" id="status-${alert.alert_id}">Queued_S-Band</td>
-                <td class="py-4 text-right">
-                    <button onclick="acknowledgeAlert('${alert.alert_id}', this)" class="btn-ack-alert px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-sm">Acknowledge</button>
-                </td>
-            `;
-            alertsTableBody.prepend(tr);
-        }
     }
 
     // ---------------------------------------------------------
-    // 8. Conversational Companion AI Engine
+    // 8. Conversational Companion AI Interaction
     // ---------------------------------------------------------
     async function sendChatMessage(text) {
-        if (!text || !text.trim()) return;
-
+        if (!text || text.trim().length === 0) return;
         appendChatBubble('user', text);
         if (chatInput) chatInput.value = '';
+
+        if (chatTypingIndicator) chatTypingIndicator.classList.remove('hidden');
 
         try {
             const resp = await fetch('/api/interact', {
@@ -645,16 +712,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             const data = await resp.json();
+            if (chatTypingIndicator) chatTypingIndicator.classList.add('hidden');
             appendChatBubble('ai', data.ai_response);
 
-            // Audio speech playback
+            // Voice synthesis
             speakWithBrowserTTS(data.ai_response);
 
             if (data.intervention && data.intervention.id === 'INT-BREATHE-01') {
                 startBreathingPacer();
             }
         } catch (e) {
+            if (chatTypingIndicator) chatTypingIndicator.classList.add('hidden');
             console.log("Chat error:", e);
+            appendChatBubble('ai', "MAITRI telemetry sync nominal. Offline autonomous companion standing by.");
         }
     }
 
@@ -662,11 +732,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!chatContainer) return;
         const isAi = speaker === 'ai';
         const bubble = document.createElement('div');
-        bubble.className = `${isAi ? 'bg-dark-850 border-slate-800' : 'bg-indigo-950/40 border-indigo-500/30'} border rounded-2xl p-4 ${isAi ? 'self-end' : 'self-start'} w-11/12 text-sm leading-relaxed`;
+        bubble.className = `${isAi ? 'bg-dark-850 border-slate-800' : 'bg-indigo-950/40 border-indigo-500/30'} border rounded-xl p-3 ${isAi ? 'self-end' : 'self-start'} w-11/12 text-xs leading-relaxed`;
         bubble.innerHTML = `
             <div class="flex justify-between items-center mb-1 text-xs ${isAi ? 'text-indigo-300 font-bold' : 'text-emerald-400 font-semibold'}">
                 <span>${isAi ? 'MAITRI AI Companion' : 'Astronaut (Spoken)'}</span>
-                <span class="text-slate-500 font-normal">Now</span>
+                <span class="text-slate-500 font-normal text-[10px]">Now</span>
             </div>
             <p class="text-slate-200">${text}</p>
         `;
@@ -745,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (telemetry.transcript) {
                     appendChatBubble('user', telemetry.transcript);
+                    if (chatTypingIndicator) chatTypingIndicator.classList.remove('hidden');
                     const chatResp = await fetch('/api/interact', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -754,10 +825,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         })
                     });
                     const chatData = await chatResp.json();
+                    if (chatTypingIndicator) chatTypingIndicator.classList.add('hidden');
                     appendChatBubble('ai', chatData.ai_response);
                     speakWithBrowserTTS(chatData.ai_response);
                 }
             } catch (e) {
+                if (chatTypingIndicator) chatTypingIndicator.classList.add('hidden');
                 console.log("Simulation error:", e);
             }
         });
@@ -808,7 +881,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('[MAITRI WS] Socket error, falling back to HTTP:', err);
             };
             ws.onclose = () => {
-                console.log('[MAITRI WS] Connection closed. Auto-reconnecting in 3s...');
                 setTimeout(initWebSocket, 3000);
             };
         } catch (e) {
@@ -817,20 +889,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------
-    // 13. Dynamic Emotion Valence Waveform (Real-Time SVG)
+    // 13. Dynamic Emotion Valence Waveform (Accurate SVG)
     // ---------------------------------------------------------
     function updateValenceTimeline(domEmotion, valenceScore) {
         if (!timelineValencePath || !timelineActiveNode) return;
         
         let y = 58;
-        if (domEmotion === 'happy') y = 25;
-        else if (domEmotion === 'calm' || domEmotion === 'neutral') y = 55;
-        else if (domEmotion === 'fatigued') y = 78;
-        else if (domEmotion === 'sad' || domEmotion === 'isolated') y = 84;
-        else if (domEmotion === 'stressed' || domEmotion === 'frustrated') y = 96;
-
         if (valenceScore !== undefined && valenceScore !== null) {
-            y = Math.min(105, Math.max(15, Math.round(60 - (valenceScore * 40))));
+            // Map valence (-1.0 to +1.0) into Y coordinates [15 to 105]
+            // +1.0 -> y=20 (Top Green Zone)
+            //  0.0 -> y=58 (Middle Neutral Zone)
+            // -1.0 -> y=98 (Bottom Red Zone)
+            y = Math.min(105, Math.max(15, Math.round(58 - (valenceScore * 40))));
+        } else {
+            if (domEmotion === 'happy') y = 25;
+            else if (domEmotion === 'calm' || domEmotion === 'neutral') y = 55;
+            else if (domEmotion === 'fatigued') y = 78;
+            else if (domEmotion === 'sad' || domEmotion === 'isolated') y = 84;
+            else if (domEmotion === 'stressed' || domEmotion === 'frustrated') y = 96;
         }
 
         valenceBuffer.push(y);
@@ -848,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timelineValencePath.setAttribute('d', d);
         timelineActiveNode.setAttribute('cx', '500');
         timelineActiveNode.setAttribute('cy', y);
-        timelineActiveNode.setAttribute('fill', y > 75 ? '#F87171' : (y > 65 ? '#FBBF24' : '#34D399'));
+        timelineActiveNode.setAttribute('fill', y > 75 ? '#F87171' : (y > 45 ? '#94A3B8' : '#34D399'));
     }
 
     // ---------------------------------------------------------
@@ -862,12 +938,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.status === 'ACKNOWLEDGED') {
                 if (btnEl) {
                     btnEl.disabled = true;
-                    btnEl.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default';
+                    btnEl.className = 'px-3 py-1 text-xs font-semibold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default';
                     btnEl.innerText = 'Acknowledged';
                 }
                 const statusEl = document.getElementById(`status-${alertId}`);
                 if (statusEl) {
-                    statusEl.className = 'py-4 text-emerald-400 font-semibold';
+                    statusEl.className = 'py-3 text-emerald-400 font-semibold';
                     statusEl.innerText = 'Acknowledged';
                 }
             }
@@ -905,14 +981,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    item.className = `p-4 bg-dark-850 border-l-4 ${isHigh ? 'border-amber-500' : 'border-emerald-500'} rounded-xl border border-slate-800 flex justify-between items-center`;
+                    item.className = `p-3 bg-dark-850 border-l-4 ${isHigh ? 'border-amber-500' : 'border-emerald-500'} rounded-xl border border-slate-800 flex justify-between items-center text-xs`;
                     item.innerHTML = `
                         <div>
                             <div class="flex items-center gap-2">
                                 <strong class="text-white">Record #${record.session_id || idx + 1} — ${dom.toUpperCase()}</strong>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${isHigh ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">Risk: ${risk}</span>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${isHigh ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">Risk: ${risk}</span>
                             </div>
-                            <p class="text-xs text-slate-400 mt-0.5">PERCLOS: ${record.perclos ? record.perclos.toFixed(1) + '%' : '4.0%'} · Pitch F0: ${record.pitch_f0 ? record.pitch_f0.toFixed(0) + ' Hz' : '130 Hz'} · Vocal Tension: ${record.vocal_tension ? record.vocal_tension.toFixed(0) + '%' : '12%'}</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">PERCLOS: ${record.perclos ? record.perclos.toFixed(1) + '%' : '4.0%'} · Pitch F0: ${record.pitch_f0 ? record.pitch_f0.toFixed(0) + ' Hz' : '130 Hz'} · Vocal Tension: ${record.vocal_tension ? record.vocal_tension.toFixed(0) + '%' : '12%'}</p>
                         </div>
                         <span class="text-xs font-mono text-slate-400">${timeStr}</span>
                     `;
@@ -924,7 +1000,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Initialize Real-Time WebSocket & Session Data on load
+    // ---------------------------------------------------------
+    // 16. Admin / Flight Surgeon Console Loader
+    // ---------------------------------------------------------
+    window.loadAdminConsole = async function() {
+        try {
+            const resp = await fetch('/api/admin/crew-summary');
+            if (resp.status === 403) {
+                console.warn("User does not have Admin clearance. Prompting role toggle.");
+                return;
+            }
+            const data = await resp.json();
+            const triageContainer = document.getElementById('admin-triage-list');
+            if (!triageContainer) return;
+
+            const alerts = data.recent_alerts || [];
+            if (alerts.length > 0) {
+                triageContainer.innerHTML = '';
+                alerts.forEach(alt => {
+                    const isCrit = alt.risk_level >= 3;
+                    const item = document.createElement('div');
+                    item.className = `p-3 bg-dark-850 border-l-4 ${isCrit ? 'border-red-500' : 'border-amber-500'} rounded-xl border border-slate-800 flex justify-between items-center text-xs`;
+                    item.innerHTML = `
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <strong class="text-white">${alt.alert_id}</strong>
+                                <span class="px-2 py-0.5 rounded ${isCrit ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'} font-semibold">
+                                    Level ${alt.risk_level} · Risk ${alt.risk_score ? alt.risk_score.toFixed(1) : '55.0'}
+                                </span>
+                            </div>
+                            <p class="text-slate-400 mt-0.5">Primary Affect: ${alt.dominant_emotion || 'Distress'} · Crew: ${alt.astronaut_id || 'CREW-BAS-01'}</p>
+                        </div>
+                        <button onclick="acknowledgeAlert('${alt.alert_id}', this)" class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                            Acknowledge
+                        </button>
+                    `;
+                    triageContainer.appendChild(item);
+                });
+            }
+        } catch(e) {
+            console.error("Admin console load error:", e);
+        }
+    };
+
+    // Initialize Real-Time WebSocket, Sessions, and Permissions
     initWebSocket();
     window.loadSessionHistory();
 });

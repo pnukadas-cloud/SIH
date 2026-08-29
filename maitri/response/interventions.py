@@ -58,5 +58,11 @@ class InterventionManager:
                 
         return self.interventions[0] if self.interventions else None
 
+    def get_intervention(self, intervention_id: str) -> Optional[Dict[str, Any]]:
+        for item in self.interventions:
+            if item.get("id") == intervention_id:
+                return item
+        return None
+
     def get_all_interventions(self) -> List[Dict[str, Any]]:
         return self.interventions

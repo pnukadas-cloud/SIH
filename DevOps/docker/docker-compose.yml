@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  maitri-core:
+    build:
+      context: ../..
+      dockerfile: DevOps/docker/Dockerfile
+    container_name: maitri-mission-control
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ENVIRONMENT=production
+    restart: unless-stopped
+    volumes:
+      - maitri-data:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  maitri-data:
+    driver: local
