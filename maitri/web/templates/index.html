@@ -174,7 +174,7 @@
     <!-- ======================================================== -->
     <!-- CINEMATIC WELCOME OVERLAY -->
     <!-- ======================================================== -->
-    <div id="welcome-overlay">
+    <div id="welcome-overlay" class="hidden">
         <div class="welcome-grid"></div>
         <div class="relative z-10 max-w-2xl w-full mx-4 text-center flex flex-col items-center">
             <div class="welcome-animate w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-mono font-extrabold text-4xl shadow-2xl shadow-indigo-500/30 mb-8 border border-indigo-300/20">
@@ -280,6 +280,12 @@
                 <span>Export</span>
             </button>
 
+            <!-- Crew Logout Button -->
+            <button onclick="logoutCrewSession()" class="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm" title="Exit mission session and return to Login">
+                <span class="material-symbols-outlined text-sm text-red-400">logout</span>
+                <span class="hidden sm:inline">Logout</span>
+            </button>
+
             <!-- Mission Clock (Desktop) -->
             <div class="hidden xl:flex items-center gap-1.5 text-xs font-mono text-slate-400 bg-dark-950 px-3 py-1.5 rounded-xl border border-slate-800">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -358,22 +364,22 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-2.5 flex-wrap">
-                            <h2 id="hud-astronaut-name" class="text-base font-extrabold text-white tracking-tight">Aryan</h2>
-                            <span id="hud-astronaut-id-badge" class="px-2 py-0.5 text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-lg">AST-001</span>
-                            <span id="hud-astronaut-role-badge" class="px-2 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 rounded-lg">Mission Commander</span>
+                            <h2 id="hud-astronaut-name" class="text-base font-extrabold text-white tracking-tight">{{ active_astronaut.name }}</h2>
+                            <span id="hud-astronaut-id-badge" class="px-2 py-0.5 text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-lg">{{ active_astronaut.astronaut_id }}</span>
+                            <span id="hud-astronaut-role-badge" class="px-2 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 rounded-lg">{{ active_astronaut.role }}</span>
                             <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                                 <span>MONITORING: ACTIVE</span>
                             </span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-                            <span>Callsign: <strong id="hud-astronaut-callsign" class="text-slate-200">GARUDA-1</strong></span>
+                            <span>Callsign: <strong id="hud-astronaut-callsign" class="text-slate-200">{{ active_astronaut.callsign }}</strong></span>
                             <span>·</span>
                             <span>Well-Being: <strong id="hud-astronaut-wellbeing" class="text-slate-400 font-semibold">STANDBY</strong></span>
                             <span>·</span>
                             <span>Risk Score: <strong id="hud-astronaut-risk" class="text-slate-200">-- / 100</strong></span>
                             <span>·</span>
-                            <span>Session: <strong id="hud-astronaut-session" class="text-indigo-300 font-mono text-[11px]">SESS-AST-001-ACTIVE</strong></span>
+                            <span>Session: <strong id="hud-astronaut-session" class="text-indigo-300 font-mono text-[11px]">SESS-{{ active_astronaut.astronaut_id }}-ACTIVE</strong></span>
                         </p>
                     </div>
                 </div>

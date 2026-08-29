@@ -22,6 +22,10 @@ async def login(req: LoginRequest, response: Response):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": "Invalid crew ID or passcode", "code": "INVALID_CREDENTIALS"}
         )
+    
+    from Backend_DB.routes.telemetry_routes import pipeline_service
+    active_astro = pipeline_service.set_active_astronaut(user["user_id"])
+
     token = AuthManager.create_session(user)
     response.set_cookie(
         key="maitri_session",
@@ -33,12 +37,13 @@ async def login(req: LoginRequest, response: Response):
     return {
         "status": "SUCCESS",
         "token": token,
+        "redirect_url": "/dashboard",
         "user": {
             "user_id": user["user_id"],
             "name": user["name"],
-            "callsign": user["callsign"],
-            "role": user["role"].value,
-            "clearance_level": user["clearance_level"]
+            "callsign": user.get("callsign", active_astro.get("callsign", "")),
+            "role": user["role"].value if hasattr(user["role"], "value") else str(user["role"]),
+            "clearance_level": user.get("clearance_level", "Level-2 (Flight Crew)")
         }
     }
 

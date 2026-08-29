@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>MAITRI — AI Well-Being Assistant | ISRO Bhartiya Antariksh Station</title>
+    
+    <!-- Tailwind CSS with custom plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: "#EEF2FF",
+                            100: "#E0E7FF",
+                            400: "#818CF8",
+                            500: "#6366F1",
+                            600: "#4F46E5",
+                            700: "#4338CA"
+                        },
+                        dark: {
+                            950: "#090D16",
+                            900: "#0F172A",
+                            850: "#151F36",
+                            800: "#1E293B",
+                            750: "#27354E",
+                            700: "#334155"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+                        mono: ["JetBrains Mono", "SF Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #090D16;
+            color: #F8FAFC;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .web-card {
+            background-color: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s ease;
+        }
+        .web-card:hover {
+            border-color: rgba(99, 102, 241, 0.35);
+            box-shadow: 0 25px 45px -10px rgba(79, 70, 229, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* 3D Holographic Torus Canvas */
+        #bg-torus-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glow-button {
+            position: relative;
+            transition: all 0.25s ease;
+        }
+        .glow-button:hover {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.45);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-600 selection:text-white relative overflow-x-hidden">
+
+    <!-- 3D Translucent Rotating Torus Background -->
+    <canvas id="bg-torus-canvas" class="fixed inset-0 w-full h-full pointer-events-none" style="z-index: 0;"></canvas>
+
+    <!-- TOP AEROSPACE NAVIGATION -->
+    <header class="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-mono font-bold text-xl shadow-lg shadow-indigo-500/25">
+                M
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-extrabold text-lg text-white tracking-tight">MAITRI</span>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-full">ISRO BAS</span>
+                </div>
+                <span class="text-xs text-slate-400 font-medium">Bhartiya Antariksh Station</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="/login" class="px-4 py-2 rounded-xl bg-dark-850 hover:bg-dark-800 border border-slate-700 hover:border-indigo-500 text-xs font-semibold text-slate-200 transition-all flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm text-indigo-400">login</span>
+                <span>Crew Access</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <main class="relative z-10 max-w-5xl mx-auto px-6 py-12 sm:py-16 text-center flex flex-col items-center">
+        
+        <!-- Status Pill -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-6 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Gaganyaan Long-Duration Spaceflight System · Operational Ready</span>
+        </div>
+
+        <!-- Big Title -->
+        <h1 class="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight mb-4">
+            MAITRI
+        </h1>
+        <p class="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-indigo-200 to-cyan-300 mb-6">
+            AI Well-Being Assistant
+        </p>
+
+        <!-- Description -->
+        <p class="text-slate-300 text-base sm:text-lg max-w-2xl font-normal leading-relaxed mb-10">
+            Multimodal AI assistant for monitoring and supporting the psychological and physical well-being of crew members.
+        </p>
+
+        <!-- Primary CTA -->
+        <div class="flex flex-col sm:flex-row items-center gap-4 mb-16">
+            <a href="/login" class="glow-button px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-base flex items-center gap-3 transition-all shadow-xl shadow-indigo-600/30 group">
+                <span>Enter MAITRI</span>
+                <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </a>
+            <a href="/login#face-id" class="px-6 py-4 rounded-2xl bg-dark-850/90 hover:bg-dark-800 border border-slate-700 hover:border-cyan-500/50 text-slate-200 text-sm font-semibold flex items-center gap-2.5 transition-all">
+                <span class="material-symbols-outlined text-lg text-cyan-400">face</span>
+                <span>Instant Face ID Login</span>
+            </a>
+        </div>
+
+        <!-- 4 CORE FEATURE CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full text-left">
+            
+            <!-- Card 1: Multimodal Monitoring -->
+            <div class="web-card p-6 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4">
+                        <span class="material-symbols-outlined text-2xl">videocam</span>
+                    </div>
+                    <h2 class="text-base font-bold text-white mb-2">Multimodal Monitoring</h2>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Audio + video based monitoring tracking facial action units, PERCLOS, and vocal acoustics in real-time.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-[11px] text-indigo-400 font-semibold gap-1">
+                    <span>Acoustic + Visual Fusion</span>
+                </div>
+            </div>
+
+            <!-- Card 2: AI Intervention -->
+            <div class="web-card p-6 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-4">
+                        <span class="material-symbols-outlined text-2xl">psychology</span>
+                    </div>
+                    <h2 class="text-base font-bold text-white mb-2">AI Intervention</h2>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Short adaptive supportive conversations providing cognitive grounding, relaxation, and procedural clarity.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-[11px] text-purple-400 font-semibold gap-1">
+                    <span>Adaptive Grounding</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Crew Well-Being -->
+            <div class="web-card p-6 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4">
+                        <span class="material-symbols-outlined text-2xl">ecg_heart</span>
+                    </div>
+                    <h2 class="text-base font-bold text-white mb-2">Crew Well-Being</h2>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Continuous emotional and physical well-being monitoring with fatigue, blink dynamics, and stress index scoring.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-[11px] text-emerald-400 font-semibold gap-1">
+                    <span>Physical + Psychological</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Ground Alerting -->
+            <div class="web-card p-6 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
+                        <span class="material-symbols-outlined text-2xl">cell_tower</span>
+                    </div>
+                    <h2 class="text-base font-bold text-white mb-2">Ground Alerting</h2>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Critical concerns can be escalated to the ground station flight surgeon console during orbital passes.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-[11px] text-cyan-400 font-semibold gap-1">
+                    <span>Telemetry Tele-Support</span>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+        <div>
+            <span>ISRO / Department of Space · Bhartiya Antariksh Station (BAS)</span>
+        </div>
+        <div class="flex items-center gap-4 text-slate-400">
+            <span>Smart India Hackathon 2025</span>
+            <span>·</span>
+            <span>Problem ID 25175</span>
+        </div>
+    </footer>
+
+    <!-- Background 3D Torus Script -->
+    <script src="/static/js/torus-background.js"></script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Mission Crew Login — MAITRI | ISRO</title>
+    
+    <!-- Tailwind CSS with custom plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: "#EEF2FF",
+                            100: "#E0E7FF",
+                            400: "#818CF8",
+                            500: "#6366F1",
+                            600: "#4F46E5",
+                            700: "#4338CA"
+                        },
+                        dark: {
+                            950: "#090D16",
+                            900: "#0F172A",
+                            850: "#151F36",
+                            800: "#1E293B",
+                            750: "#27354E",
+                            700: "#334155"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+                        mono: ["JetBrains Mono", "SF Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #090D16;
+            color: #F8FAFC;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .web-card {
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        /* 3D Holographic Torus Canvas */
+        #bg-torus-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .login-input {
+            background-color: rgba(21, 31, 54, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #F8FAFC;
+            transition: all 0.2s ease;
+        }
+        .login-input:focus {
+            border-color: #6366F1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+            outline: none;
+        }
+
+        /* Cybernetic Scanning Reticle */
+        .scan-crosshair {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: #06B6D4;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-600 selection:text-white relative overflow-x-hidden">
+
+    <!-- 3D Translucent Rotating Torus Background -->
+    <canvas id="bg-torus-canvas" class="fixed inset-0 w-full h-full pointer-events-none" style="z-index: 0;"></canvas>
+
+    <!-- TOP HEADER -->
+    <header class="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3 group">
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-mono font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
+                M
+            </div>
+            <div>
+                <span class="font-extrabold text-base text-white tracking-tight">MAITRI</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 ml-2 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full">ISRO BAS</span>
+            </div>
+        </a>
+
+        <a href="/" class="text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            <span>Back to Home</span>
+        </a>
+    </header>
+
+    <!-- CENTER LOGIN CARD -->
+    <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
+        <div class="web-card w-full max-w-md p-8 sm:p-10 flex flex-col">
+            
+            <!-- Logo & Title -->
+            <div class="text-center mb-8">
+                <div class="w-14 h-14 rounded-3xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white font-mono font-extrabold text-2xl shadow-xl shadow-indigo-500/30 mx-auto mb-4 border border-indigo-300/20">
+                    M
+                </div>
+                <h1 class="text-2xl font-black text-white tracking-tight mb-1">
+                    Mission Crew Login
+                </h1>
+                <p class="text-xs text-slate-400">
+                    ISRO BAS Biometric Access & Well-Being Terminal
+                </p>
+            </div>
+
+            <!-- Error Feedback Banner -->
+            <div id="login-error-banner" class="hidden mb-6 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-base text-red-400 shrink-0">error</span>
+                <span id="login-error-msg">Invalid credentials. Please try again.</span>
+            </div>
+
+            <!-- Success Feedback Banner -->
+            <div id="login-success-banner" class="hidden mb-6 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-base text-emerald-400 shrink-0">check_circle</span>
+                <span id="login-success-msg">Authentication successful. Entering dashboard...</span>
+            </div>
+
+            <!-- Credentials Form -->
+            <form id="form-login" onsubmit="handleCredentialLogin(event)" class="flex flex-col gap-4">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+                        Astronaut ID / Username
+                    </label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">badge</span>
+                        <input type="text" id="login-username" required placeholder="e.g. AST-001 or aryan" class="login-input w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium"/>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+                        Passcode / Password
+                    </label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">lock</span>
+                        <input type="password" id="login-password" required placeholder="Enter password" class="login-input w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium"/>
+                    </div>
+                </div>
+
+                <!-- Primary Login Button -->
+                <button type="submit" id="btn-submit-login" class="w-full mt-2 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all">
+                    <span class="material-symbols-outlined text-base">login</span>
+                    <span id="btn-login-label">Login to Station</span>
+                </button>
+
+                <!-- Divider -->
+                <div class="relative my-2 flex items-center justify-center">
+                    <div class="border-t border-slate-800 w-full"></div>
+                    <span class="bg-dark-850 px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider relative">OR</span>
+                </div>
+
+                <!-- Face ID Login Button -->
+                <button type="button" onclick="openFaceIdModal()" class="w-full py-3 rounded-xl bg-dark-800/90 hover:bg-dark-750 border border-cyan-500/40 text-cyan-300 font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-md">
+                    <span class="material-symbols-outlined text-lg text-cyan-400">face</span>
+                    <span>Face ID Biometric Login</span>
+                </button>
+            </form>
+
+            <!-- Quick Demo Profiles Helper -->
+            <div class="mt-6 pt-5 border-t border-slate-800/70">
+                <span class="text-[11px] font-semibold text-slate-400 block mb-2">1-Click Test Credentials:</span>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" onclick="fillTestCreds('AST-001', 'password123')" class="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors">
+                        AST-001 (Aryan)
+                    </button>
+                    <button type="button" onclick="fillTestCreds('AST-002', 'password123')" class="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors">
+                        AST-002 (Riya)
+                    </button>
+                    <button type="button" onclick="fillTestCreds('AST-003', 'password123')" class="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 text-[11px] font-medium transition-colors">
+                        AST-003 (Karan)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card Bottom Options -->
+            <div class="mt-6 flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-800/80">
+                <button type="button" onclick="openEnrollModal()" class="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-sm">person_add</span>
+                    <span>Enroll New Astronaut</span>
+                </button>
+                <a href="/" class="hover:text-slate-200 transition-colors">Back to Home</a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 text-center text-xs text-slate-500">
+        <span>ISRO / Department of Space · Bhartiya Antariksh Station (BAS) · SIH 2025</span>
+    </footer>
+
+    <!-- ============================================================= -->
+    <!-- FACE ID BIOMETRIC OPTICAL SCANNER MODAL -->
+    <!-- ============================================================= -->
+    <div id="face-id-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="web-card max-w-md w-full p-6 relative border border-cyan-500/40">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-cyan-400">face</span>
+                    <h3 class="text-base font-bold text-white">Face ID Optical Scanner</h3>
+                </div>
+                <button onclick="closeFaceIdModal()" class="text-slate-400 hover:text-white">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4">
+                Look directly at the camera. The optical engine will match your 128-D spatial LBP biometric signature against the astronaut registry.
+            </p>
+
+            <!-- Video Viewport with Reticle -->
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-slate-700 mb-4 flex items-center justify-center">
+                <video id="face-login-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                <canvas id="face-login-canvas" class="hidden"></canvas>
+                
+                <!-- Scanning Frame Overlay -->
+                <div id="scan-reticle" class="absolute inset-8 border border-dashed border-cyan-400/60 rounded-xl pointer-events-none flex flex-col justify-between p-2">
+                    <div class="flex justify-between">
+                        <div class="scan-crosshair border-t-2 border-l-2"></div>
+                        <div class="scan-crosshair border-t-2 border-r-2"></div>
+                    </div>
+                    <div class="flex justify-between">
+                        <div class="scan-crosshair border-b-2 border-l-2"></div>
+                        <div class="scan-crosshair border-b-2 border-r-2"></div>
+                    </div>
+                </div>
+
+                <div id="scan-status-text" class="absolute bottom-2 inset-x-0 text-center text-[11px] font-mono text-cyan-300 bg-black/60 py-1">
+                    CAMERA ACTIVE · READY TO SCAN
+                </div>
+            </div>
+
+            <!-- Face ID Modal Feedback -->
+            <div id="face-modal-feedback" class="hidden mb-4 p-3 rounded-xl text-xs font-semibold"></div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="executeFaceScan()" id="btn-execute-scan" class="flex-1 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/30 transition-all">
+                    <span class="material-symbols-outlined text-base">center_focus_strong</span>
+                    <span>Scan & Authenticate</span>
+                </button>
+                <button type="button" onclick="closeFaceIdModal()" class="px-4 py-3 rounded-xl bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 text-xs font-semibold">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- ASTRONAUT ENROLLMENT MODAL -->
+    <!-- ============================================================= -->
+    <div id="enroll-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="web-card max-w-lg w-full p-6 sm:p-8 relative border border-emerald-500/40 my-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-400">person_add</span>
+                    <h3 class="text-base font-bold text-white">Enroll New Astronaut</h3>
+                </div>
+                <button onclick="closeEnrollModal()" class="text-slate-400 hover:text-white">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-5">
+                Register a new crew member with credentials and optional live face biometric snapshot.
+            </p>
+
+            <form id="form-enroll" onsubmit="handleEnrollSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Astronaut ID *</label>
+                        <input type="text" id="enroll-id" required placeholder="e.g. AST-004" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name *</label>
+                        <input type="text" id="enroll-name" required placeholder="e.g. Vikram Sarabhai" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Callsign</label>
+                        <input type="text" id="enroll-callsign" placeholder="e.g. AGNI-4" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Mission Role</label>
+                        <input type="text" id="enroll-role" placeholder="e.g. Mission Specialist" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Login Username</label>
+                        <input type="text" id="enroll-username" placeholder="Leave blank to use ID" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Passcode / Password *</label>
+                        <input type="password" id="enroll-password" required placeholder="Min 6 characters" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                    </div>
+                </div>
+
+                <!-- Snapshot Capture Section -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Face Biometric Capture (Optional)</label>
+                    <div class="p-3 bg-dark-900 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <span id="enroll-cam-indicator" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                            <span id="enroll-cam-status" class="text-xs text-slate-400">Snapshot not captured</span>
+                        </div>
+                        <button type="button" onclick="captureEnrollSnapshot()" class="px-3 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-750 border border-slate-700 text-xs text-indigo-300 font-semibold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">photo_camera</span>
+                            <span id="enroll-btn-snap-text">Take Snapshot</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="enroll-feedback" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit" id="btn-submit-enroll" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md">
+                        <span class="material-symbols-outlined text-base">how_to_reg</span>
+                        <span>Complete Enrollment</span>
+                    </button>
+                    <button type="button" onclick="closeEnrollModal()" class="px-4 py-3 rounded-xl bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 text-xs font-semibold">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Background 3D Torus Script -->
+    <script src="/static/js/torus-background.js"></script>
+
+    <!-- Login & Authentication Logic -->
+    <script>
+        // 1-Click Credential Autofill
+        function fillTestCreds(user, pass) {
+            document.getElementById('login-username').value = user;
+            document.getElementById('login-password').value = pass;
+        }
+
+        // Credentials Login Submission
+        async function handleCredentialLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorBanner = document.getElementById('login-error-banner');
+            const errorMsg = document.getElementById('login-error-msg');
+            const successBanner = document.getElementById('login-success-banner');
+            const btnSubmit = document.getElementById('btn-submit-login');
+            const btnLabel = document.getElementById('btn-login-label');
+
+            errorBanner.classList.add('hidden');
+            btnSubmit.disabled = true;
+            btnLabel.innerText = "Authenticating...";
+
+            try {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username_or_id: username,
+                        password: password
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (resp.ok && data.status === "SUCCESS") {
+                    successBanner.classList.remove('hidden');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 500);
+                } else {
+                    errorBanner.classList.remove('hidden');
+                    errorMsg.innerText = data.detail?.error || "Invalid crew ID or passcode. Please retry.";
+                    btnSubmit.disabled = false;
+                    btnLabel.innerText = "Login to Station";
+                }
+            } catch(err) {
+                errorBanner.classList.remove('hidden');
+                errorMsg.innerText = "Network connection failed. Check server status.";
+                btnSubmit.disabled = false;
+                btnLabel.innerText = "Login to Station";
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Face ID Modal & Scanner Flow
+        // -------------------------------------------------------------
+        let faceMediaStream = null;
+
+        async function openFaceIdModal() {
+            const modal = document.getElementById('face-id-modal');
+            const video = document.getElementById('face-login-video');
+            const statusText = document.getElementById('scan-status-text');
+            const feedback = document.getElementById('face-modal-feedback');
+            
+            feedback.classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            try {
+                faceMediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+                    audio: false
+                });
+                video.srcObject = faceMediaStream;
+                statusText.innerText = "OPTICAL CAMERA ACTIVE · ALIGN FACE IN RETICLE";
+            } catch(err) {
+                console.error("Camera access error:", err);
+                statusText.innerText = "CAMERA ACCESS DENIED OR UNAVAILABLE";
+                feedback.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-300 block";
+                feedback.innerText = "Could not activate camera. Please grant browser camera permissions.";
+            }
+        }
+
+        function closeFaceIdModal() {
+            const modal = document.getElementById('face-id-modal');
+            const video = document.getElementById('face-login-video');
+            if (faceMediaStream) {
+                faceMediaStream.getTracks().forEach(t => t.stop());
+                faceMediaStream = null;
+            }
+            if (video) video.srcObject = null;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function executeFaceScan() {
+            const video = document.getElementById('face-login-video');
+            const canvas = document.getElementById('face-login-canvas');
+            const feedback = document.getElementById('face-modal-feedback');
+            const statusText = document.getElementById('scan-status-text');
+            const btnScan = document.getElementById('btn-execute-scan');
+
+            if (!video || !video.videoWidth) {
+                feedback.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-300 block";
+                feedback.innerText = "Camera stream initializing. Please wait a moment.";
+                return;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Data = canvas.toDataURL('image/jpeg', 0.85);
+
+            btnScan.disabled = true;
+            statusText.innerText = "ANALYZING 128-D LBP EMBEDDING...";
+            feedback.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 block";
+            feedback.innerText = "Matching biometric vector against database...";
+
+            try {
+                const resp = await fetch('/api/auth/recognize-face', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ frame: base64Data })
+                });
+
+                const data = await resp.json();
+
+                if (resp.ok && data.status === "IDENTIFIED") {
+                    feedback.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 block";
+                    feedback.innerText = `✓ Biometric Identity Confirmed: ${data.name} (${data.astronaut_id}). Redirecting...`;
+                    statusText.innerText = "ACCESS GRANTED · OPENING SESSION";
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 600);
+                } else {
+                    btnScan.disabled = false;
+                    statusText.innerText = "RECOGNITION FAILED";
+                    feedback.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-300 block";
+                    feedback.innerText = data.message || "Face not identified. Please try again or use Astronaut ID & password.";
+                }
+            } catch(err) {
+                btnScan.disabled = false;
+                statusText.innerText = "ERROR IN SCAN";
+                feedback.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-300 block";
+                feedback.innerText = "Network error communicating with biometric engine.";
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Enrollment Flow
+        // -------------------------------------------------------------
+        let enrollSnapshotBase64 = null;
+
+        function openEnrollModal() {
+            const modal = document.getElementById('enroll-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeEnrollModal() {
+            const modal = document.getElementById('enroll-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            enrollSnapshotBase64 = null;
+        }
+
+        async function captureEnrollSnapshot() {
+            const indicator = document.getElementById('enroll-cam-indicator');
+            const statusLabel = document.getElementById('enroll-cam-status');
+            const btnText = document.getElementById('enroll-btn-snap-text');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+
+                // Wait 500ms for camera auto-focus
+                await new Promise(r => setTimeout(r, 500));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                enrollSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+                stream.getTracks().forEach(t => t.stop());
+
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+                statusLabel.className = "text-xs text-emerald-400 font-semibold";
+                statusLabel.innerText = "✓ Snapshot captured with biometric face vector";
+                btnText.innerText = "Retake";
+            } catch(err) {
+                alert("Camera error: " + err.message);
+            }
+        }
+
+        async function handleEnrollSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('enroll-id').value.trim();
+            const name = document.getElementById('enroll-name').value.trim();
+            const callsign = document.getElementById('enroll-callsign').value.trim() || "Flight-Crew";
+            const role = document.getElementById('enroll-role').value.trim() || "Mission Specialist";
+            const username = document.getElementById('enroll-username').value.trim() || id.toLowerCase();
+            const password = document.getElementById('enroll-password').value.trim();
+            const feedback = document.getElementById('enroll-feedback');
+            const btnSubmit = document.getElementById('btn-submit-enroll');
+
+            btnSubmit.disabled = true;
+            feedback.className = "p-3 rounded-xl text-xs font-semibold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 block";
+            feedback.innerText = "Registering astronaut profile in SQLite database...";
+
+            try {
+                const resp = await fetch('/api/auth/enroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        astronaut_id: id,
+                        name: name,
+                        callsign: callsign,
+                        role: role,
+                        username: username,
+                        password: password,
+                        frame: enrollSnapshotBase64
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (resp.ok && data.status === "SUCCESS") {
+                    feedback.className = "p-3 rounded-xl text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 block";
+                    feedback.innerText = `✓ Successfully enrolled ${name} (${id})! You can now log in.`;
+                    setTimeout(() => {
+                        closeEnrollModal();
+                        document.getElementById('login-username').value = id;
+                        document.getElementById('login-password').value = password;
+                    }, 1200);
+                } else {
+                    btnSubmit.disabled = false;
+                    feedback.className = "p-3 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-300 block";
+                    feedback.innerText = data.detail?.error || "Enrollment failed. Please check inputs.";
+                }
+            } catch(err) {
+                btnSubmit.disabled = false;
+                feedback.className = "p-3 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-300 block";
+                feedback.innerText = "Network error: " + err.message;
+            }
+        }
+
+        // Open Face ID modal if URL hash is #face-id
+        if (window.location.hash === '#face-id') {
+            setTimeout(openFaceIdModal, 300);
+        }
+    </script>
+</body>
+</html>

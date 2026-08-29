@@ -1740,6 +1740,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Crew Session Logout
+    window.logoutCrewSession = async function() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch(e) {
+            console.warn("Logout error:", e);
+        }
+        window.location.href = '/login';
+    };
+
     // Initialize Real-Time WebSocket, Sessions, Audio Waveform & Enrolled Astronauts
     initWebSocket();
     window.loadEnrolledAstronauts();

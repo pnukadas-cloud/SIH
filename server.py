@@ -14,8 +14,8 @@ import cv2
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
@@ -57,6 +57,39 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 connected_websockets = set()
 
 @app.get("/", response_class=HTMLResponse)
+async def landing_page(request: Request):
+    """Render MAITRI Landing Page with Torus 3D visual, CTA, and 4 feature cards."""
+    user = await get_current_user_optional(request)
+    return templates.TemplateResponse(
+        request=request,
+        name="landing.html",
+        context={
+            "system_name": SYSTEM_NAME,
+            "system_version": SYSTEM_VERSION,
+            "space_station": SPACE_STATION,
+            "agency": AGENCY,
+            "current_user": user
+        }
+    )
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Render Mission Crew Login Page with Credential & Face ID authentication."""
+    user = await get_current_user_optional(request)
+    if user:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={
+            "system_name": SYSTEM_NAME,
+            "system_version": SYSTEM_VERSION,
+            "space_station": SPACE_STATION,
+            "agency": AGENCY
+        }
+    )
+
 @app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/admin", response_class=HTMLResponse)
 @app.get("/analysis", response_class=HTMLResponse)
@@ -65,11 +98,14 @@ connected_websockets = set()
 @app.get("/sessions", response_class=HTMLResponse)
 @app.get("/profile", response_class=HTMLResponse)
 @app.get("/architecture", response_class=HTMLResponse)
-async def index_page(request: Request):
-    """Render main Spacecraft HUD, Astronaut Portal & Flight Surgeon Console."""
+async def dashboard_page(request: Request):
+    """Render existing Spacecraft HUD & Astronaut Portal. Requires authentication."""
     user = await get_current_user_optional(request)
     if not user:
-        user = AuthManager.get_default_astronaut()
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Automatically activate the authenticated astronaut's profile in pipeline service
+    active_astro = pipeline_service.set_active_astronaut(user["user_id"])
 
     return templates.TemplateResponse(
         request=request,
@@ -80,7 +116,7 @@ async def index_page(request: Request):
             "space_station": SPACE_STATION,
             "agency": AGENCY,
             "crew_profiles": pipeline_service.crew_profiles,
-            "active_astronaut": pipeline_service.active_astronaut,
+            "active_astronaut": active_astro,
             "interventions": pipeline_service.interventions.get_all_interventions(),
             "current_user": user
         }
