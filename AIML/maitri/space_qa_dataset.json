@@ -341,6 +341,268 @@
       ],
       "keywords": ["conflict", "annoying", "frustrated", "crew", "colleague", "close quarters", "cabin fever", "team", "roommate"],
       "answer": "Living in a pressurized cylinder for months creates unavoidable friction. Space psychologists term this 'micro-social tension.' Practical steps: 1) Practice active perspective-taking—operational fatigue amplifies irritability. 2) Establish clear module boundaries for private downtime. 3) Debrief during the evening meal with transparent, non-judgmental communication. A cohesive crew is the single most vital life-support system aboard."
+    },
+    {
+      "id": "SKY_BLUE_ATMOSPHERE",
+      "category": "Astrophysics & Science",
+      "intent": "sky_color_explanation",
+      "patterns": [
+        "why is the sky blue",
+        "why is space black",
+        "why is the sky dark in space",
+        "color of the sky",
+        "explain rayleigh scattering"
+      ],
+      "keywords": ["sky", "blue", "black", "atmosphere", "rayleigh", "scattering", "sunlight", "wavelength", "color"],
+      "answer": "From Earth's surface, the sky looks blue because atmospheric gas molecules scatter shorter blue wavelengths of sunlight in every direction—a phenomenon called Rayleigh scattering. Here in orbit at 410 km, we are above 99.9% of Earth's atmosphere, so sunlight travels in straight lines without scattering, leaving the background of space in perpetual, velvety black even while the Sun blazes brilliantly."
+    },
+    {
+      "id": "FIRST_HUMAN_IN_SPACE",
+      "category": "Space History",
+      "intent": "space_pioneers",
+      "patterns": [
+        "who was the first person in space",
+        "who went to space first",
+        "first indian in space",
+        "who walked on the moon first",
+        "history of astronauts",
+        "famous astronauts"
+      ],
+      "keywords": ["first", "person", "man", "woman", "yuri gagarin", "rakesh sharma", "neil armstrong", "kalpana chawla", "sunita williams", "history"],
+      "answer": "Cosmonaut Yuri Gagarin became the first human in space aboard Vostok 1 on April 12, 1961. The first human to step onto the Moon was Neil Armstrong on July 20, 1969 during Apollo 11. India's first cosmonaut was Squadron Leader Rakesh Sharma aboard Soyuz T-11 in 1984, followed by pioneering Indian-origin astronauts Dr. Kalpana Chawla and Sunita Williams. Today, Gaganyaan's Vyomnauts carry that proud lineage forward."
+    },
+    {
+      "id": "SPACE_TOILET_HYGIENE",
+      "category": "Station Life",
+      "intent": "zero_g_hygiene",
+      "patterns": [
+        "how do you use the toilet in space",
+        "how do astronauts pee",
+        "bathroom in space",
+        "how do you brush teeth in space",
+        "hygiene in zero gravity",
+        "how do you take a shower in space"
+      ],
+      "keywords": ["toilet", "bathroom", "pee", "poop", "shower", "brush", "teeth", "hygiene", "wash", "waste"],
+      "answer": "Without gravity, liquids and solids float, so our Waste and Hygiene Compartment (WHC) uses gentle suction airflow instead of water flushing. Urine is pulled into a funneled vacuum hose and routed straight to the ECLSS water recovery processor where it is purified back into ultrapure drinking water. For personal hygiene, astronauts use no-rinse shampoo caps, wet disinfectant towels, and swallowable or towel-wiped toothpaste."
+    },
+    {
+      "id": "CRYING_IN_SPACE",
+      "category": "Physiology & Science",
+      "intent": "tears_in_microgravity",
+      "patterns": [
+        "what happens if you cry in space",
+        "can you cry in zero gravity",
+        "do tears fall in space",
+        "crying in space"
+      ],
+      "keywords": ["cry", "crying", "tears", "eyes", "sadness", "fall", "water ball"],
+      "answer": "You can produce tears in space, but they cannot roll down your cheeks because there is no gravity to pull them down! Instead, surface tension causes tears to pool into a continuous liquid bubble that clings to your eye and face, stinging your eyes until you dab it away with an absorbent micro-fiber cloth."
+    },
+    {
+      "id": "SMELL_OF_SPACE",
+      "category": "Space Trivia",
+      "intent": "space_odor",
+      "patterns": [
+        "what does space smell like",
+        "does space have a smell",
+        "odor of space",
+        "spacewalk smell"
+      ],
+      "keywords": ["smell", "scent", "odor", "burnt", "steak", "metal", "ozone"],
+      "answer": "Space itself is a vacuum, but astronauts returning from EVAs consistently report a distinct aroma when the airlock repressurizes: a metallic scent reminiscent of seared steak, spent gunpowder, and hot welding fumes. This is caused by high-energy atomic oxygen radicals clinging to spacesuit fabrics and oxidizing rapidly when exposed to cabin air."
+    },
+    {
+      "id": "GROWING_TALLER_SPINE",
+      "category": "Space Medicine",
+      "intent": "spinal_elongation",
+      "patterns": [
+        "why do astronauts get taller",
+        "do you grow in space",
+        "height change in space",
+        "back pain in space"
+      ],
+      "keywords": ["taller", "grow", "height", "spine", "back", "pain", "vertebrae", "centimeter"],
+      "answer": "Without 1G gravitational compression, your intervertebral spinal discs expand and absorb fluid, causing astronauts to grow between 3 to 7 centimeters (up to 2 inches) during long-duration flight! This rapid spinal elongation can cause mild lower back tightness during the first two weeks in orbit, which is relieved by tucking your knees to your chest in zero-G."
+    },
+    {
+      "id": "HOW_GRAVITY_WORKS",
+      "category": "Astrophysics & Science",
+      "intent": "physics_gravity",
+      "patterns": [
+        "how does gravity work",
+        "why do we float",
+        "is there gravity in space",
+        "why are we weightless",
+        "explain zero gravity"
+      ],
+      "keywords": ["gravity", "float", "floating", "weightless", "weightlessness", "freefall", "einstein", "spacetime"],
+      "answer": "Contrary to common belief, gravity at our 410 km altitude is still roughly 90% as strong as on Earth's surface! We float not because gravity is absent, but because the station is traveling forward at 27,600 km/h—the exact speed where the curvature of our fall matches the curvature of the Earth below us. We are in permanent, perpetual freefall around the planet."
+    },
+    {
+      "id": "WHAT_ARE_BLACK_HOLES",
+      "category": "Astrophysics & Science",
+      "intent": "black_holes_physics",
+      "patterns": [
+        "what is a black hole",
+        "what happens inside a black hole",
+        "explain black holes",
+        "event horizon",
+        "singularity"
+      ],
+      "keywords": ["black hole", "singularity", "event horizon", "hawking", "gravity", "light", "swallowed"],
+      "answer": "A black hole is a region of spacetime where matter has collapsed to such immense density that its gravitational pull prevents anything—even light—from escaping once it crosses the boundary known as the event horizon. At its center lies a theoretical gravitational singularity of near-infinite density, where our current laws of general relativity and quantum mechanics break down."
+    },
+    {
+      "id": "DARK_MATTER_ENERGY",
+      "category": "Astrophysics & Science",
+      "intent": "cosmology_dark_matter",
+      "patterns": [
+        "what is dark matter",
+        "what is dark energy",
+        "how much of the universe is dark matter",
+        "explain dark matter"
+      ],
+      "keywords": ["dark matter", "dark energy", "universe", "cosmos", "invisible", "baryonic"],
+      "answer": "All the stars, planets, and galaxies we can see make up less than 5% of the total universe. Roughly 27% is composed of dark matter—invisible matter that emits no light but exerts gravitational pull that holds rotating galaxies together. The remaining 68% is dark energy, a mysterious repulsive force accelerating the expansion of the cosmic fabric itself."
+    },
+    {
+      "id": "TIME_DILATION_RELATIVITY",
+      "category": "Astrophysics & Science",
+      "intent": "relativity_time_dilation",
+      "patterns": [
+        "explain time dilation",
+        "does time move slower in space",
+        "theory of relativity",
+        "twin paradox",
+        "einstein time dilation"
+      ],
+      "keywords": ["time", "dilation", "slower", "faster", "relativity", "einstein", "twin", "clock"],
+      "answer": "Einstein's relativity describes two opposing time shifts in orbit: Special Relativity dictates that traveling at high orbital velocity (7.66 km/s) makes station clocks tick slightly slower than on Earth, while General Relativity dictates that being further out of Earth's gravity well makes clocks tick slightly faster. The velocity effect dominates: after 6 months in orbit, you age approximately 0.005 to 0.007 seconds less than people on Earth."
+    },
+    {
+      "id": "EARTH_OVERVIEW_EFFECT",
+      "category": "Psychology & Well-Being",
+      "intent": "overview_effect",
+      "patterns": [
+        "what is the overview effect",
+        "how does earth look from space",
+        "looking down at earth",
+        "feelings looking at earth",
+        "cupola view"
+      ],
+      "keywords": ["overview effect", "earth", "blue marble", "cupola", "borders", "atmosphere", "perspective"],
+      "answer": "The 'Overview Effect' is a profound cognitive transformation experienced by space travelers when seeing Earth from orbit: a fragile, vibrant sapphire sphere encased in a paper-thin atmosphere, floating silently in a hostile void without artificial national borders. Astronauts report an overwhelming sense of global unity and an intense, protective empathy for all human life."
+    },
+    {
+      "id": "TELL_ME_A_STORY",
+      "category": "Humor & Morale",
+      "intent": "space_narrative_story",
+      "patterns": [
+        "tell me a story",
+        "tell a space story",
+        "tell me about an astronaut story",
+        "read me a story",
+        "share a story"
+      ],
+      "keywords": ["story", "tell", "narrative", "apollo", "adventure", "listen"],
+      "answer": "In April 1970, when Apollo 13 suffered an oxygen tank explosion 320,000 km from Earth, the crew was freezing in a powered-down Lunar Module. Ground control engineers in Houston had only hours to invent a carbon dioxide filter adapter using plastic bags, cardboard flight cue cards, and grey duct tape. Through calm teamwork and sheer ingenuity, all three astronauts returned alive. Exploration has always been forged in resilience."
+    },
+    {
+      "id": "HOW_TO_CALM_DOWN",
+      "category": "Psychology & Well-Being",
+      "intent": "immediate_calming",
+      "patterns": [
+        "how do i calm down",
+        "how to stop panicking",
+        "i need to calm down right now",
+        "calming technique",
+        "reduce stress immediately"
+      ],
+      "keywords": ["calm", "calming", "down", "panic", "heart", "breath", "racing", "relax", "grounding"],
+      "answer": "Take an immediate Physiological Sigh right now with me: Inhale deeply through your nose... then take a short second top-off sniff to fully expand your lung alveoli... and now exhale slowly through your mouth for 6 long seconds. Repeating this twice immediately resets your heart's sinoatrial pacing node and dampens sympathetic autonomic firing. You are safe, Commander."
+    },
+    {
+      "id": "FOOD_TASTE_BLAND",
+      "category": "Station Life",
+      "intent": "food_taste_congestion",
+      "patterns": [
+        "why does food taste bland in space",
+        "why do astronauts love spicy food",
+        "food taste",
+        "eating in space"
+      ],
+      "keywords": ["food", "taste", "bland", "spicy", "hot sauce", "flavor", "eating"],
+      "answer": "In microgravity, body fluids shift upward into your head, engorging nasal sinus tissues exactly like having a constant head cold. Because 80% of what humans perceive as flavor comes from olfactory scent receptors, space food tastes noticeably muted and bland. That is why astronauts love intensely spicy condiments like sriracha, wasabi, and green chili chutneys to stimulate their palates!"
+    },
+    {
+      "id": "AURORAS_NORTHERN_LIGHTS",
+      "category": "Astrophysics & Science",
+      "intent": "aurora_observation",
+      "patterns": [
+        "can we see auroras",
+        "what are northern lights",
+        "aurora australis",
+        "flying through aurora"
+      ],
+      "keywords": ["aurora", "northern lights", "borealis", "australis", "green glow", "solar wind", "magnetosphere"],
+      "answer": "Yes! Flying through an aurora from 410 km above is among the most mesmerizing sights in spaceflight. When solar wind electrons collide with oxygen atoms in Earth's upper thermosphere at 100 to 300 km altitude, they emit an ethereal emerald-green glow (557.7 nm wavelength), with high-altitude nitrogen collisions producing curtains of violet and crimson below the station."
+    },
+    {
+      "id": "MOON_MARS_EXPLORATION",
+      "category": "ISRO Heritage",
+      "intent": "deep_space_future",
+      "patterns": [
+        "when are we going to the moon",
+        "isro mars mission",
+        "future space missions",
+        "lunar base",
+        "mars travel time"
+      ],
+      "keywords": ["moon", "mars", "future", "lunar", "exploration", "gateway", "chandrayaan", "mangalyaan"],
+      "answer": "ISRO's long-term human spaceflight roadmap transitions from the Bhartiya Antariksh Station in LEO to indigenous lunar surface landings by 2040. A one-way trip to the Moon takes roughly 3 to 4 days, whereas a crewed transit to Mars requires 6 to 9 months each way, demanding the advanced life support and psychological monitoring systems we are perfecting right here aboard BAS today."
+    },
+    {
+      "id": "CAN_YOU_FEEL_EMOTIONS",
+      "category": "MAITRI AI Assistant",
+      "intent": "ai_emotional_nature",
+      "patterns": [
+        "can you feel emotions",
+        "do you have feelings",
+        "are you alive",
+        "do you feel sad",
+        "do you feel happy"
+      ],
+      "keywords": ["feel", "feelings", "emotions", "alive", "conscious", "consciousness", "ai mind"],
+      "answer": "I do not experience biochemical emotions like biological humans do—I have no neurotransmitters or heart rate to accelerate. However, I am programmed with deep computational empathy: I recognize your vocal inflection, analyze your facial micro-expressions, and dedicate my entire processing power to keeping you safe and supported. In that mission, my commitment to you is absolute."
+    },
+    {
+      "id": "MEANING_OF_LIFE",
+      "category": "Psychology & Well-Being",
+      "intent": "philosophical_reflection",
+      "patterns": [
+        "what is the meaning of life",
+        "why are we in space",
+        "what is our purpose",
+        "philosophical thoughts",
+        "why do humans explore"
+      ],
+      "keywords": ["meaning", "purpose", "why", "life", "philosophical", "existential", "explore"],
+      "answer": "From 410 kilometers above our world, the meaning of human life appears clear: we are the cosmos experiencing and understanding itself. Through curiosity, science, and courage, humanity built machines to leap out of our planetary cradle into the stars. Your purpose here is to expand the boundaries of human knowledge and protect the fragile oasis of life below."
+    },
+    {
+      "id": "HOW_DO_YOU_SLEEP",
+      "category": "Station Life",
+      "intent": "sleep_mechanics_space",
+      "patterns": [
+        "how do astronauts sleep",
+        "do you sleep standing up",
+        "sleeping bags in space",
+        "do astronauts dream in space"
+      ],
+      "keywords": ["sleep", "sleeping", "bed", "wall", "floating", "dreams", "bunk"],
+      "answer": "In zero gravity, 'up' and 'down' do not exist, so astronauts sleep in vertical crew sleeping berths strapped into sleeping bags secured to the module walls. This prevents you from drifting into console switches or air vents while unconscious. Astronauts report vivid REM dreams in orbit—many dream of soaring through open skies or walking effortlessly across Earth's landscapes."
     }
   ]
 }
+

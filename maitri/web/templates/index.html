@@ -252,6 +252,12 @@
                 <span id="role-toggle-text">Switch to Surgeon</span>
             </button>
 
+            <!-- AI Brain Switcher / Status -->
+            <button onclick="openAiBrainModal()" id="btn-ai-brain-status" class="px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm" title="Configure Online LLM / Gemini API Key">
+                <span class="material-symbols-outlined text-sm text-purple-400">psychology</span>
+                <span id="ai-brain-label">AI: Local Brain</span>
+            </button>
+
             <!-- Export Modal Trigger -->
             <button onclick="openExportModal()" class="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm">
                 <span class="material-symbols-outlined text-sm text-emerald-400">download</span>
@@ -1019,7 +1025,54 @@
 
             <div id="export-status-message" class="text-center text-xs text-slate-400 pt-1">
                 All records are cryptographically timestamped by ISRO IDRSS S-Band.
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- AI BRAIN SETTINGS MODAL (GEMINI / LOCAL) -->
+    <!-- ======================================================== -->
+    <div id="ai-brain-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="web-card max-w-lg w-full p-6 flex flex-col gap-5 border border-purple-500/40 shadow-2xl relative">
+            <button onclick="closeAiBrainModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-2xl">psychology</span>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">MAITRI AI Brain Settings</h3>
+                    <p class="text-xs text-slate-400">Connect Google Gemini 1.5 Flash for state-of-the-art conversational intelligence</p>
+                </div>
             </div>
+            
+            <div class="bg-dark-950 p-4 rounded-xl border border-slate-800 flex flex-col gap-2.5 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Active Intelligence Engine:</span>
+                    <span id="modal-ai-status-badge" class="px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-700">Offline Aerospace Engine</span>
+                </div>
+                <p class="text-slate-300 leading-relaxed">
+                    By default, MAITRI runs entirely on its local 40+ topic aerospace knowledge engine. To unlock full real-time reasoning, deep explanations, and free conversational answers to <em>any</em> prompt, connect a free <strong>Google Gemini API Key</strong>.
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-slate-200">Google Gemini API Key:</label>
+                <div class="flex gap-2">
+                    <input type="password" id="input-gemini-api-key" class="flex-1 bg-dark-950 border border-slate-700 text-slate-100 text-xs rounded-xl px-3 py-2.5 outline-none focus:border-purple-500 font-mono" placeholder="AIzaSy..." autocomplete="off"/>
+                    <button onclick="saveGeminiApiKey()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shrink-0 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">bolt</span>
+                        <span>Activate</span>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                    <span>Don't have a key? It's 100% free:</span>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-purple-400 hover:underline flex items-center gap-1 font-semibold">
+                        Get free Gemini Key from Google AI Studio <span class="material-symbols-outlined text-xs">open_in_new</span>
+                    </a>
+                </div>
+            </div>
+            <div id="ai-key-feedback" class="hidden text-xs p-3 rounded-xl font-semibold"></div>
         </div>
     </div>
 
@@ -1201,6 +1254,101 @@
                 activeBtn.classList.remove('text-slate-400');
             }
         }
+
+        // ========================================================
+        // AI Brain Settings & Gemini API Key Handlers
+        // ========================================================
+        function openAiBrainModal() {
+            const modal = document.getElementById('ai-brain-modal');
+            if (modal) modal.classList.remove('hidden');
+            checkAiBrainStatus();
+        }
+
+        function closeAiBrainModal() {
+            const modal = document.getElementById('ai-brain-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function checkAiBrainStatus() {
+            try {
+                const resp = await fetch('/api/settings/ai-status');
+                const data = await resp.json();
+                const btnLabel = document.getElementById('ai-brain-label');
+                const btn = document.getElementById('btn-ai-brain-status');
+                const modalBadge = document.getElementById('modal-ai-status-badge');
+
+                if (data.online_llm_active) {
+                    if (btnLabel) btnLabel.innerText = 'AI: Gemini 1.5 Active';
+                    if (btn) {
+                        btn.className = 'px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm';
+                    }
+                    if (modalBadge) {
+                        modalBadge.innerText = '🟢 Google Gemini 1.5 Flash (Online LLM)';
+                        modalBadge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+                    }
+                } else {
+                    if (btnLabel) btnLabel.innerText = 'AI: Local Brain';
+                    if (btn) {
+                        btn.className = 'px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm';
+                    }
+                    if (modalBadge) {
+                        modalBadge.innerText = 'Offline Aerospace Knowledge Engine (40+ Topics)';
+                        modalBadge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-700';
+                    }
+                }
+            } catch(e) {
+                console.warn('AI status check error:', e);
+            }
+        }
+
+        async function saveGeminiApiKey() {
+            const input = document.getElementById('input-gemini-api-key');
+            const feedback = document.getElementById('ai-key-feedback');
+            const key = input ? input.value.trim() : '';
+
+            if (!key || key.length < 10) {
+                if (feedback) {
+                    feedback.className = 'text-xs p-3 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/30 block';
+                    feedback.innerText = 'Please enter a valid Google Gemini API Key (e.g. AIzaSy...).';
+                }
+                return;
+            }
+
+            if (feedback) {
+                feedback.className = 'text-xs p-3 rounded-xl font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30 block';
+                feedback.innerText = 'Activating Google Gemini 1.5 Flash brain...';
+            }
+
+            try {
+                const resp = await fetch('/api/settings/ai-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: key, provider: 'gemini' })
+                });
+                const res = await resp.json();
+                if (res.status === 'SUCCESS') {
+                    if (feedback) {
+                        feedback.className = 'text-xs p-3 rounded-xl font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 block';
+                        feedback.innerText = '✓ Google Gemini 1.5 Flash successfully connected! MAITRI will now answer any question with real-time generative intelligence.';
+                    }
+                    checkAiBrainStatus();
+                    setTimeout(closeAiBrainModal, 2000);
+                } else {
+                    if (feedback) {
+                        feedback.className = 'text-xs p-3 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/30 block';
+                        feedback.innerText = 'Failed to activate key: ' + (res.message || 'Unknown error');
+                    }
+                }
+            } catch(err) {
+                if (feedback) {
+                    feedback.className = 'text-xs p-3 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/30 block';
+                    feedback.innerText = 'Network error activating key: ' + err.message;
+                }
+            }
+        }
+
+        // Check AI brain status on startup
+        checkAiBrainStatus();
     </script>
 </body>
 </html>
