@@ -80,13 +80,43 @@ async def simulate_scenario(scenario_name: str):
 
 @router.get("/history/telemetry")
 async def get_telemetry_history(astronaut_id: Optional[str] = None):
-    data = pipeline_service.db.get_recent_telemetry(astronaut_id=astronaut_id, limit=60)
-    return {"history": data}
+    target_id = astronaut_id or pipeline_service.active_astronaut["astronaut_id"]
+    data = pipeline_service.db.get_recent_telemetry(astronaut_id=target_id, limit=60)
+    return {"astronaut_id": target_id, "history": data}
 
 @router.get("/history/alerts")
-async def get_alerts_history():
-    data = pipeline_service.db.get_alerts(limit=25)
+async def get_alerts_history(astronaut_id: Optional[str] = None):
+    data = pipeline_service.db.get_alerts(astronaut_id=astronaut_id, limit=25)
     return {"alerts": data}
+
+@router.get("/sessions")
+async def get_monitoring_sessions(astronaut_id: Optional[str] = None):
+    """Retrieve isolated monitoring session records for an astronaut."""
+    target_id = astronaut_id or pipeline_service.active_astronaut["astronaut_id"]
+    sessions = pipeline_service.db.get_sessions(astronaut_id=target_id, limit=50)
+    return {
+        "astronaut_id": target_id,
+        "active_session_id": pipeline_service.current_session_id,
+        "sessions": sessions
+    }
+
+@router.get("/astronaut/profile")
+async def get_astronaut_profile(astronaut_id: Optional[str] = None):
+    """Retrieve astronaut identity, personal baseline vitals, coping preferences, and session statistics."""
+    target_id = astronaut_id or pipeline_service.active_astronaut["astronaut_id"]
+    profile = next((p for p in pipeline_service.crew_profiles if p["astronaut_id"] == target_id), pipeline_service.active_astronaut)
+    sessions = pipeline_service.db.get_sessions(astronaut_id=target_id, limit=10)
+    alerts = pipeline_service.db.get_alerts(astronaut_id=target_id, limit=10)
+    
+    return {
+        "astronaut_id": target_id,
+        "profile": profile,
+        "baseline_vitals": profile.get("baseline_vitals", {}),
+        "coping_preferences": profile.get("coping_preferences", []),
+        "recent_sessions_count": len(sessions),
+        "recent_alerts_count": len(alerts),
+        "active_session_id": pipeline_service.current_session_id
+    }
 
 @router.post("/alerts/acknowledge/{alert_id}")
 async def acknowledge_alert(alert_id: str):

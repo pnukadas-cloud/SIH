@@ -12,26 +12,46 @@ from Security_API.authorization.roles import UserRole
 
 # In-Memory & Database-backed User Directory
 USERS_DB: Dict[str, Dict[str, Any]] = {
-    # Default Astronaut: Captain Vikram Rathore
+    # Astronaut 1: Wing Cmdr. Prashanth Nair (Mission Commander)
     "CREW-BAS-01": {
         "user_id": "CREW-BAS-01",
-        "username": "vikram",
-        "name": "Captain Vikram Rathore",
-        "callsign": "SURYA-1",
+        "username": "prashanth",
+        "name": "Wing Cmdr. Prashanth Nair",
+        "callsign": "Vyom-Leader",
         "role": UserRole.ASTRONAUT,
-        # SHA-256 for demo password 'astronaut123'
         "password_hash": hashlib.sha256("astronaut123".encode()).hexdigest(),
-        "mission_assignment": "Gaganyaan Orbital Expedition",
-        "clearance_level": "Level-2 (Orbital Crew)"
+        "mission_assignment": "Gaganyaan-BAS Expedition 1",
+        "clearance_level": "Level-2 (Mission Commander)"
     },
-    # Default Flight Surgeon / Admin: Dr. Sunita Sharma
+    # Astronaut 2: Dr. Sunidhi Sharma (Flight Surgeon / Payload Specialist)
+    "CREW-BAS-02": {
+        "user_id": "CREW-BAS-02",
+        "username": "sunidhi",
+        "name": "Dr. Sunidhi Sharma",
+        "callsign": "Gagan-Doc",
+        "role": UserRole.ASTRONAUT,
+        "password_hash": hashlib.sha256("astronaut123".encode()).hexdigest(),
+        "mission_assignment": "Gaganyaan-BAS Expedition 1",
+        "clearance_level": "Level-2 (Payload Specialist)"
+    },
+    # Astronaut 3: Group Capt. Ajit Krishnan (Flight Engineer)
+    "CREW-BAS-03": {
+        "user_id": "CREW-BAS-03",
+        "username": "ajit",
+        "name": "Group Capt. Ajit Krishnan",
+        "callsign": "Shakti-Pilot",
+        "role": UserRole.ASTRONAUT,
+        "password_hash": hashlib.sha256("astronaut123".encode()).hexdigest(),
+        "mission_assignment": "Gaganyaan-BAS Expedition 1",
+        "clearance_level": "Level-2 (Flight Engineer)"
+    },
+    # Flight Surgeon / Admin: Dr. Sunita Sharma (Ground Station)
     "ADMIN-MED-01": {
         "user_id": "ADMIN-MED-01",
         "username": "surgeon_sharma",
         "name": "Dr. Sunita Sharma",
         "callsign": "GROUND-SURGEON",
         "role": UserRole.ADMIN,
-        # SHA-256 for demo password 'isro_surgeon2025'
         "password_hash": hashlib.sha256("isro_surgeon2025".encode()).hexdigest(),
         "mission_assignment": "ISRO Telemetry & Biomedical Mission Control",
         "clearance_level": "Level-4 (Chief Medical Officer)"

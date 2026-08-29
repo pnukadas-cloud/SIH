@@ -36,16 +36,42 @@ class MasterPipelineService:
         self.ground = GroundStationDispatcher()
         self.interventions = InterventionManager()
 
-        # 3. Crew Profiles
+        # 3. Crew Profiles & Session Lifecycle
         self.crew_profiles = self._load_crew_profiles()
         self.active_astronaut = self.crew_profiles[0] if self.crew_profiles else {
             "astronaut_id": "CREW-BAS-01",
-            "name": "Captain Vikram Rathore",
-            "callsign": "SURYA-1",
-            "role": "Mission Commander"
+            "name": "Wing Cmdr. Prashanth Nair",
+            "callsign": "Vyom-Leader",
+            "role": "Mission Commander",
+            "baseline_vitals": {
+                "resting_heart_rate_bpm": 64,
+                "blink_rate_bpm": 16.5,
+                "resting_ear": 0.32,
+                "resting_mar": 0.18,
+                "mean_f0_pitch_hz": 128.0
+            }
         }
         self.last_telemetry: Optional[Dict[str, Any]] = None
         self.last_alert_time = 0.0
+
+        # Monitoring Session Initialization
+        now = time.time()
+        self.current_session_id = f"SESS-{self.active_astronaut['astronaut_id']}-{int(now)}"
+        self.session_start_time = now
+        self.session_emotions: Dict[str, int] = {}
+        self.session_risk_scores: List[float] = []
+        self.session_interventions_count = 0
+        self.session_alerts_count = 0
+
+        self.db.upsert_session(
+            session_id=self.current_session_id,
+            astronaut_id=self.active_astronaut["astronaut_id"],
+            start_time=self.session_start_time,
+            dominant_state="relaxed",
+            avg_risk_score=12.0,
+            status="ACTIVE"
+        )
+        self.fer.set_active_astronaut(self.active_astronaut["astronaut_id"], self.active_astronaut.get("baseline_vitals"))
 
     def _load_crew_profiles(self) -> List[Dict[str, Any]]:
         path = DATA_DIR / "astronaut_baselines.json"
@@ -56,9 +82,45 @@ class MasterPipelineService:
         return []
 
     def set_active_astronaut(self, astronaut_id: str) -> Dict[str, Any]:
+        """Switch active astronaut with strict session isolation and personal baseline loading."""
+        now = time.time()
         for p in self.crew_profiles:
             if p["astronaut_id"] == astronaut_id:
-                self.active_astronaut = p
+                if self.active_astronaut.get("astronaut_id") != astronaut_id:
+                    # Finalize previous astronaut session
+                    avg_risk = float(np.mean(self.session_risk_scores)) if self.session_risk_scores else 12.0
+                    dom_state = max(self.session_emotions.items(), key=lambda i: i[1])[0] if self.session_emotions else "relaxed"
+                    self.db.upsert_session(
+                        session_id=self.current_session_id,
+                        astronaut_id=self.active_astronaut["astronaut_id"],
+                        start_time=self.session_start_time,
+                        end_time=now,
+                        dominant_state=dom_state,
+                        avg_risk_score=round(avg_risk, 1),
+                        emotion_summary=self.session_emotions,
+                        interventions_count=self.session_interventions_count,
+                        alerts_count=self.session_alerts_count,
+                        status="COMPLETED"
+                    )
+
+                    # Start isolated new session for selected astronaut
+                    self.active_astronaut = p
+                    self.current_session_id = f"SESS-{astronaut_id}-{int(now)}"
+                    self.session_start_time = now
+                    self.session_emotions = {}
+                    self.session_risk_scores = []
+                    self.session_interventions_count = 0
+                    self.session_alerts_count = 0
+
+                    self.db.upsert_session(
+                        session_id=self.current_session_id,
+                        astronaut_id=astronaut_id,
+                        start_time=self.session_start_time,
+                        dominant_state="relaxed",
+                        avg_risk_score=12.0,
+                        status="ACTIVE"
+                    )
+                    self.fer.set_active_astronaut(astronaut_id, p.get("baseline_vitals"))
                 return p
         return self.active_astronaut
 
@@ -71,8 +133,12 @@ class MasterPipelineService:
         """Execute end-to-end multimodal perception and assessment."""
         now = time.time()
 
-        # 1. Preprocessing & Analysis
-        fer_res = self.fer.extract_features(frame)
+        # 1. Preprocessing & Analysis (Phase 2 Enhanced Pipeline)
+        fer_res = self.fer.extract_features(
+            frame=frame,
+            astronaut_id=self.active_astronaut["astronaut_id"],
+            astronaut_baseline=self.active_astronaut.get("baseline_vitals")
+        )
         ser_res = self.ser.extract_prosody(audio_chunk)
         text_res = self.sentiment.analyze(text_transcript)
 
@@ -98,6 +164,8 @@ class MasterPipelineService:
             wellbeing_res["level"],
             physical_features
         )
+        if selected_intervention:
+            self.session_interventions_count += 1
 
         # 5. Ground Alert Check (Level >= 2 and throttle 30s)
         alert_packet = None
@@ -111,6 +179,7 @@ class MasterPipelineService:
                 selected_intervention
             )
             self.last_alert_time = now
+            self.session_alerts_count += 1
             self.db.insert_alert(
                 alert_packet["alert_id"],
                 self.active_astronaut["astronaut_id"],
@@ -120,7 +189,26 @@ class MasterPipelineService:
                 alert_packet
             )
 
-        # 6. Database Logging
+        # 6. Session Aggregations & Periodic Sync
+        dom_st = fer_res.get("facial_state", "relaxed")
+        self.session_emotions[dom_st] = self.session_emotions.get(dom_st, 0) + 1
+        self.session_risk_scores.append(wellbeing_res["wellbeing_score"])
+
+        if len(self.session_risk_scores) % 4 == 0:
+            avg_r = float(np.mean(self.session_risk_scores)) if self.session_risk_scores else 12.0
+            self.db.upsert_session(
+                session_id=self.current_session_id,
+                astronaut_id=self.active_astronaut["astronaut_id"],
+                start_time=self.session_start_time,
+                dominant_state=dom_st,
+                avg_risk_score=round(avg_r, 1),
+                emotion_summary=self.session_emotions,
+                interventions_count=self.session_interventions_count,
+                alerts_count=self.session_alerts_count,
+                status="ACTIVE"
+            )
+
+        # 7. Database Telemetry Logging (Strict Astronaut Association)
         self.db.insert_telemetry(
             self.active_astronaut["astronaut_id"],
             fused_res,
@@ -129,22 +217,33 @@ class MasterPipelineService:
             ser_res
         )
 
-        # 7. Construct Unified Telemetry Response
+        # 8. Construct Unified Telemetry Response
         telemetry = {
             "timestamp": now,
+            "session_id": self.current_session_id,
+            "astronaut_id": self.active_astronaut["astronaut_id"],
             "astronaut": self.active_astronaut,
+            "facial_state": fer_res.get("facial_state", "relaxed"),
+            "stress_indicator": fer_res.get("stress_indicator", 0.0),
+            "fatigue_indicator": fer_res.get("fatigue_indicator", 0.0),
+            "facial_indicators": fer_res.get("facial_indicators", {}),
+            "face_quality": fer_res.get("face_quality", {}),
+            "confidence": fer_res.get("confidence", 0.85),
+            "baseline_comparison": fer_res.get("baseline_comparison", {}),
             "vision": {
                 "face_detected": fer_res["face_detected"],
                 "face_count": fer_res.get("face_count", 0),
                 "multiple_faces": fer_res.get("multiple_faces", False),
                 "lighting": fer_res.get("lighting", {}),
+                "face_quality": fer_res.get("face_quality", {}),
                 "face_bounding_box": fer_res.get("face_bounding_box"),
                 "eye_aspect_ratio": fer_res.get("eye_aspect_ratio", 0.28),
                 "mouth_aspect_ratio": fer_res.get("mouth_aspect_ratio", 0.20),
                 "blinks_per_min": fer_res.get("blinks_per_min", 0.0),
                 "yawns_per_min": fer_res.get("yawns_per_min", 0),
                 "perclos": fer_res.get("perclos", 0.0),
-                "action_units": fer_res.get("action_units", {})
+                "action_units": fer_res.get("action_units", {}),
+                "confidence": fer_res.get("confidence", 0.85)
             },
             "audio": {
                 "is_speech_active": ser_res.get("is_speech_active", False),

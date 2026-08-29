@@ -72,6 +72,23 @@ class DatabaseManager:
                     status TEXT
                 )
             """)
+
+            # Astronaut Monitoring Sessions (Phase 1 Identity & History)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS monitoring_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    astronaut_id TEXT NOT NULL,
+                    start_time REAL NOT NULL,
+                    end_time REAL,
+                    dominant_state TEXT,
+                    avg_risk_score REAL,
+                    emotion_summary TEXT,
+                    risk_observations TEXT,
+                    interventions_count INTEGER DEFAULT 0,
+                    alerts_count INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'ACTIVE'
+                )
+            """)
             conn.commit()
 
             try:
@@ -79,6 +96,70 @@ class DatabaseManager:
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
+
+    def upsert_session(self, session_id: str, astronaut_id: str, start_time: float, 
+                       dominant_state: str = "nominal", avg_risk_score: float = 12.0,
+                       emotion_summary: Optional[Dict[str, Any]] = None, 
+                       risk_observations: Optional[Dict[str, Any]] = None,
+                       interventions_count: int = 0, alerts_count: int = 0,
+                       status: str = "ACTIVE", end_time: Optional[float] = None):
+        """Create or update an astronaut monitoring session record."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO monitoring_sessions
+                (session_id, astronaut_id, start_time, end_time, dominant_state, avg_risk_score, 
+                 emotion_summary, risk_observations, interventions_count, alerts_count, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    end_time = excluded.end_time,
+                    dominant_state = excluded.dominant_state,
+                    avg_risk_score = excluded.avg_risk_score,
+                    emotion_summary = excluded.emotion_summary,
+                    risk_observations = excluded.risk_observations,
+                    interventions_count = excluded.interventions_count,
+                    alerts_count = excluded.alerts_count,
+                    status = excluded.status
+            """, (
+                session_id, astronaut_id, start_time, end_time, dominant_state, avg_risk_score,
+                json.dumps(emotion_summary or {}), json.dumps(risk_observations or {}),
+                interventions_count, alerts_count, status
+            ))
+            conn.commit()
+
+    def get_sessions(self, astronaut_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve sessions strictly partitioned by astronaut ID."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if astronaut_id:
+                cursor.execute("""
+                    SELECT session_id, astronaut_id, start_time, end_time, dominant_state, 
+                           avg_risk_score, emotion_summary, risk_observations, interventions_count, alerts_count, status
+                    FROM monitoring_sessions
+                    WHERE astronaut_id = ?
+                    ORDER BY start_time DESC LIMIT ?
+                """, (astronaut_id, limit))
+            else:
+                cursor.execute("""
+                    SELECT session_id, astronaut_id, start_time, end_time, dominant_state, 
+                           avg_risk_score, emotion_summary, risk_observations, interventions_count, alerts_count, status
+                    FROM monitoring_sessions
+                    ORDER BY start_time DESC LIMIT ?
+                """, (limit,))
+            rows = cursor.fetchall()
+            result = []
+            for r in rows:
+                d = dict(r)
+                try:
+                    d["emotion_summary"] = json.loads(d.get("emotion_summary") or "{}")
+                except Exception:
+                    pass
+                try:
+                    d["risk_observations"] = json.loads(d.get("risk_observations") or "{}")
+                except Exception:
+                    pass
+                result.append(d)
+            return result
 
     def insert_telemetry(self, astronaut_id: str, fused: Dict[str, Any], wellbeing: Dict[str, Any], vision: Dict[str, Any], audio: Dict[str, Any]):
         now = time.time()
@@ -134,14 +215,22 @@ class DatabaseManager:
             """, (alert_id, now, astronaut_id, risk_level, risk_score, dominant_emotion, json.dumps(payload), "QUEUED_S_BAND"))
             conn.commit()
 
-    def get_alerts(self, limit: int = 20) -> List[Dict[str, Any]]:
+    def get_alerts(self, astronaut_id: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT alert_id, timestamp, astronaut_id, risk_level, risk_score, dominant_emotion, status
-                FROM ground_alerts
-                ORDER BY id DESC LIMIT ?
-            """, (limit,))
+            if astronaut_id:
+                cursor.execute("""
+                    SELECT alert_id, timestamp, astronaut_id, risk_level, risk_score, dominant_emotion, status
+                    FROM ground_alerts
+                    WHERE astronaut_id = ?
+                    ORDER BY id DESC LIMIT ?
+                """, (astronaut_id, limit))
+            else:
+                cursor.execute("""
+                    SELECT alert_id, timestamp, astronaut_id, risk_level, risk_score, dominant_emotion, status
+                    FROM ground_alerts
+                    ORDER BY id DESC LIMIT ?
+                """, (limit,))
             return [dict(r) for r in cursor.fetchall()]
 
     def acknowledge_alert(self, alert_id: str) -> bool:

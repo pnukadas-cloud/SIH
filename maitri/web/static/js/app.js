@@ -1110,11 +1110,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ---------------------------------------------------------
-    // 15. Live Session History Loader
+    // 15. Live Session History Loader (Astronaut Isolated)
     // ---------------------------------------------------------
     window.loadSessionHistory = async function() {
+        const crewSel = document.getElementById('crew-selector');
+        const astId = crewSel ? crewSel.value : 'CREW-BAS-01';
         try {
-            const resp = await fetch('/api/history/telemetry');
+            const resp = await fetch(`/api/history/telemetry?astronaut_id=${astId}`);
             const data = await resp.json();
             const container = document.getElementById('session-telemetry-logs');
             if (!container) return;
@@ -1142,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.innerHTML = `
                         <div>
                             <div class="flex items-center gap-2">
-                                <strong class="text-white">Record #${record.session_id || idx + 1} — ${dom.toUpperCase()}</strong>
+                                <strong class="text-white">Crew: ${record.astronaut_id || astId} — ${dom.toUpperCase()}</strong>
                                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${isHigh ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">Risk: ${risk}</span>
                             </div>
                             <p class="text-[11px] text-slate-400 mt-0.5">PERCLOS: ${record.perclos ? record.perclos.toFixed(1) + '%' : '4.0%'} · Pitch F0: ${record.pitch_f0 ? record.pitch_f0.toFixed(0) + ' Hz' : '130 Hz'} · Vocal Tension: ${record.vocal_tension ? record.vocal_tension.toFixed(0) + '%' : '12%'}</p>
@@ -1151,6 +1153,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     container.appendChild(item);
                 });
+            } else {
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No prior session records logged for ${astId}. Real-time monitoring active.</div>`;
             }
         } catch (e) {
             console.error('Session history load error:', e);
@@ -1199,6 +1203,26 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Admin console load error:", e);
         }
     };
+
+    // Crew Selector Change Event (Strict Astronaut Switching)
+    const crewSelector = document.getElementById('crew-selector');
+    if (crewSelector) {
+        crewSelector.addEventListener('change', async (e) => {
+            const selectedId = e.target.value;
+            try {
+                const resp = await fetch('/api/crew/select', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ astronaut_id: selectedId })
+                });
+                const res = await resp.json();
+                console.log("[MAITRI] Switched active astronaut:", res);
+                window.loadSessionHistory();
+            } catch (err) {
+                console.error("Error switching astronaut:", err);
+            }
+        });
+    }
 
     // Initialize Real-Time WebSocket, Sessions, and Audio Waveform
     initWebSocket();
