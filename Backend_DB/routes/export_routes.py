@@ -86,3 +86,20 @@ async def export_architecture_report():
         media_type="application/pdf",
         headers={"Content-Disposition": 'attachment; filename="MAITRI_Comprehensive_System_Architecture_and_Engineering_Report.pdf"'}
     )
+
+@router.get("/presentation-guide")
+async def export_presentation_guide():
+    """Download MAITRI Demonstration and Presentation Guide PDF."""
+    pdf_path = "MAITRI_Demonstration_and_Presentation_Guide.pdf"
+    if not os.path.exists(pdf_path):
+        from DevOps.scripts.generate_presentation_pdf import build_pdf
+        build_pdf(pdf_path)
+        
+    with open(pdf_path, "rb") as f:
+        pdf_bytes = f.read()
+        
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="MAITRI_Demonstration_and_Presentation_Guide.pdf"'}
+    )
