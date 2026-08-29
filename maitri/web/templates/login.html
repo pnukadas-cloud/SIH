@@ -70,15 +70,23 @@
         }
 
         .login-input {
-            background-color: rgba(21, 31, 54, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #F8FAFC;
+            background-color: #FFFFFF !important;
+            border: 2px solid #CBD5E1 !important;
+            color: #000000 !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
             transition: all 0.2s ease;
         }
+        .login-input::placeholder {
+            color: #64748B !important;
+            font-weight: 400 !important;
+        }
         .login-input:focus {
-            border-color: #6366F1;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
-            outline: none;
+            background-color: #FFFFFF !important;
+            border-color: #6366F1 !important;
+            color: #000000 !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
+            outline: none !important;
         }
 
         /* Cybernetic Scanning Reticle */
@@ -150,8 +158,8 @@
                         Astronaut ID / Username
                     </label>
                     <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">badge</span>
-                        <input type="text" id="login-username" required placeholder="e.g. AST-001 or aryan" class="login-input w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium"/>
+                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-lg pointer-events-none">badge</span>
+                        <input type="text" id="login-username" required placeholder="e.g. AST-001 or aryan" class="login-input w-full pl-10 pr-4 py-3 rounded-xl text-sm font-semibold text-black"/>
                     </div>
                 </div>
 
@@ -160,8 +168,11 @@
                         Passcode / Password
                     </label>
                     <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">lock</span>
-                        <input type="password" id="login-password" required placeholder="Enter password" class="login-input w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium"/>
+                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-lg pointer-events-none">lock</span>
+                        <input type="password" id="login-password" required placeholder="Enter password" class="login-input w-full pl-10 pr-12 py-3 rounded-xl text-sm font-semibold text-black"/>
+                        <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-icon-login')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-black transition-colors" title="Toggle password visibility">
+                            <span id="eye-icon-login" class="material-symbols-outlined text-xl">visibility</span>
+                        </button>
                     </div>
                 </div>
 
@@ -297,33 +308,38 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Astronaut ID *</label>
-                        <input type="text" id="enroll-id" required placeholder="e.g. AST-004" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                        <input type="text" id="enroll-id" required placeholder="e.g. AST-004" class="login-input w-full px-3 py-2 rounded-xl text-xs font-semibold text-black"/>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name *</label>
-                        <input type="text" id="enroll-name" required placeholder="e.g. Vikram Sarabhai" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                        <input type="text" id="enroll-name" required placeholder="e.g. Vikram Sarabhai" class="login-input w-full px-3 py-2 rounded-xl text-xs font-semibold text-black"/>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Callsign</label>
-                        <input type="text" id="enroll-callsign" placeholder="e.g. AGNI-4" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                        <input type="text" id="enroll-callsign" placeholder="e.g. AGNI-4" class="login-input w-full px-3 py-2 rounded-xl text-xs font-semibold text-black"/>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Mission Role</label>
-                        <input type="text" id="enroll-role" placeholder="e.g. Mission Specialist" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                        <input type="text" id="enroll-role" placeholder="e.g. Mission Specialist" class="login-input w-full px-3 py-2 rounded-xl text-xs font-semibold text-black"/>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Login Username</label>
-                        <input type="text" id="enroll-username" placeholder="Leave blank to use ID" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                        <input type="text" id="enroll-username" placeholder="Leave blank to use ID" class="login-input w-full px-3 py-2 rounded-xl text-xs font-semibold text-black"/>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Passcode / Password *</label>
-                        <input type="password" id="enroll-password" required placeholder="Min 6 characters" class="login-input w-full px-3 py-2 rounded-xl text-xs"/>
+                        <div class="relative">
+                            <input type="password" id="enroll-password" required placeholder="Min 6 characters" class="login-input w-full px-3 pr-9 py-2 rounded-xl text-xs font-semibold text-black"/>
+                            <button type="button" onclick="togglePasswordVisibility('enroll-password', 'eye-icon-enroll')" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-black transition-colors" title="Toggle password visibility">
+                                <span id="eye-icon-enroll" class="material-symbols-outlined text-base">visibility</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -362,6 +378,20 @@
 
     <!-- Login & Authentication Logic -->
     <script>
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) icon.innerText = 'visibility_off';
+            } else {
+                input.type = 'password';
+                if (icon) icon.innerText = 'visibility';
+            }
+        }
+
         // 1-Click Credential Autofill
         function fillTestCreds(user, pass) {
             document.getElementById('login-username').value = user;
