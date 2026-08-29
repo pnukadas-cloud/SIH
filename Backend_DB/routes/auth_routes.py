@@ -151,7 +151,7 @@ async def recognize_face(req: Dict[str, Any], response: Response):
     Matches against enrolled database -> Automatically activates astronaut and opens session.
     """
     from AIML.facial_emotion.face_recognizer import FaceRecognizer
-    from Backend_DB.services.pipeline_service import pipeline_service
+    from Backend_DB.routes.telemetry_routes import pipeline_service
 
     frame_data = req.get("frame")
     if not frame_data:
