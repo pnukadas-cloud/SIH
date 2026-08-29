@@ -1,5 +1,7 @@
 # 🛰️ MAITRI — Multimodal AI Assistant for Astronaut Psychological & Physical Well-Being
 
+[![MAITRI CI & Telemetry Verification](https://github.com/pnukadas-cloud/SIH/actions/workflows/ci.yml/badge.svg)](https://github.com/pnukadas-cloud/SIH/actions/workflows/ci.yml)
+
 > **Smart India Hackathon (SIH 2025)**  
 > **Problem ID:** 25175 | **Category:** Software / Hard  
 > **Target Agency:** Indian Space Research Organisation (ISRO) / Department of Space (DoS)  

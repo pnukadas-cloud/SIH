@@ -1,0 +1,73 @@
+name: MAITRI CI & Telemetry Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    name: Build, Server Health & Automated Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0 libsndfile1 curl
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Launch Server & Execute Automated Test Suite
+        run: |
+          # Start FastAPI server in background
+          python -m uvicorn server:app --host 127.0.0.1 --port 8000 &
+          SERVER_PID=$!
+
+          echo "Waiting for MAITRI server to initialize on 127.0.0.1:8000..."
+          ONLINE=false
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:8000/api/status | grep -q "ONLINE"; then
+              echo "✅ MAITRI Server is online and responding to healthchecks!"
+              ONLINE=true
+              break
+            fi
+            echo "Waiting for server ($i/30)..."
+            sleep 1
+          done
+
+          if [ "$ONLINE" = false ]; then
+            echo "❌ MAITRI Server failed to start within 30 seconds"
+            kill $SERVER_PID 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "🚀 Running MAITRI automated verification test suite..."
+          python DevOps/scripts/run_tests.py
+          TEST_EXIT_CODE=$?
+
+          # Cleanly terminate server process
+          kill $SERVER_PID 2>/dev/null || true
+
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "❌ Automated verification tests failed with exit code $TEST_EXIT_CODE"
+            exit $TEST_EXIT_CODE
+          fi
+          echo "🎉 All MAITRI automated verification tests passed successfully!"
+
+      - name: Verify Docker Container Build
+        run: |
+          docker build -t maitri-app:ci -f DevOps/docker/Dockerfile .
