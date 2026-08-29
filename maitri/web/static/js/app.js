@@ -193,8 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     checkExistingPermissions();
 
+    let isVoiceActive = false;
+    let micAudioStream = null;
+
     // ---------------------------------------------------------
-    // 3. Speech Recognition (Web Speech API)
+    // 3. Speech Recognition & Microphone Stream Management
     // ---------------------------------------------------------
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -214,50 +217,129 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            if (interim && chatInput) {
+                chatInput.value = interim;
+                chatInput.placeholder = `Listening: "${interim}"...`;
+            }
+
             if (finalTranscript && finalTranscript.trim().length > 1) {
                 currentSpeechText = finalTranscript.trim();
+                if (chatInput) chatInput.value = "";
                 sendChatMessage(currentSpeechText);
                 currentSpeechText = "";
-            } else if (interim && chatInput) {
-                chatInput.placeholder = `Listening: "${interim}"...`;
             }
         };
 
         recognition.onerror = (e) => {
-            console.log('[SpeechRec Error]:', e);
+            console.log('[SpeechRec Status]:', e.error);
+            if (e.error === 'not-allowed') {
+                updatePermissionUI('denied');
+            }
         };
 
         recognition.onend = () => {
-            if (chatInput) chatInput.placeholder = "Type or speak to MAITRI...";
-            if (isContinuousListening) {
+            if (isVoiceActive) {
                 try { recognition.start(); } catch(e) {}
+            } else {
+                if (chatInput) chatInput.placeholder = "Type or speak to MAITRI...";
             }
         };
     }
 
-    if (btnToggleVoiceListen) {
-        btnToggleVoiceListen.addEventListener('click', () => {
-            if (!recognition) {
-                alert("Speech recognition is not supported in this browser. Please type your message.");
-                return;
+    async function toggleVoiceListening() {
+        if (!isVoiceActive) {
+            // ACTIVATE MICROPHONE
+            try {
+                if (!mediaStream && !micAudioStream) {
+                    micAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    initAudioAnalyser(micAudioStream);
+                } else if (mediaStream) {
+                    mediaStream.getAudioTracks().forEach(track => track.enabled = true);
+                    initAudioAnalyser(mediaStream);
+                } else if (micAudioStream) {
+                    micAudioStream.getAudioTracks().forEach(track => track.enabled = true);
+                    initAudioAnalyser(micAudioStream);
+                }
+
+                if (recognition) {
+                    try { recognition.start(); } catch(e) {}
+                }
+
+                isVoiceActive = true;
+                if (btnToggleVoiceListen) {
+                    btnToggleVoiceListen.classList.remove('bg-dark-850', 'text-slate-200', 'border-slate-700');
+                    btnToggleVoiceListen.classList.add('bg-red-600/20', 'border-red-500', 'text-red-400');
+                    btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-pulse">mic</span><span>Voice: Live</span>';
+                }
+                if (btnVoiceInput) {
+                    btnVoiceInput.classList.add('bg-red-600/20', 'border-red-500', 'text-red-400');
+                }
+                if (chatInput) {
+                    chatInput.placeholder = "🎙️ Microphone Live: Speak naturally to MAITRI...";
+                }
+                updatePermissionUI('granted');
+            } catch (err) {
+                console.warn("Microphone access error:", err);
+                updatePermissionUI('denied', err.message);
+                alert("Microphone access could not be enabled: " + err.message + "\nPlease check that your microphone is allowed in browser settings.");
             }
-            isContinuousListening = !isContinuousListening;
-            if (isContinuousListening) {
-                btnToggleVoiceListen.classList.remove('bg-dark-850', 'text-slate-200', 'border-slate-700');
-                btnToggleVoiceListen.classList.add('bg-red-600/20', 'border-red-500', 'text-red-400');
-                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span><span>Voice: On</span>';
-                try { recognition.start(); } catch(e) {}
-            } else {
-                btnToggleVoiceListen.classList.add('bg-dark-850', 'text-slate-200', 'border-slate-700');
-                btnToggleVoiceListen.classList.remove('bg-red-600/20', 'border-red-500', 'text-red-400');
-                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic</span><span>Voice: Off</span>';
+        } else {
+            // MUTE MICROPHONE
+            isVoiceActive = false;
+            if (mediaStream) {
+                mediaStream.getAudioTracks().forEach(track => track.enabled = false);
+            }
+            if (micAudioStream) {
+                micAudioStream.getAudioTracks().forEach(track => { track.enabled = false; track.stop(); });
+                micAudioStream = null;
+            }
+            if (recognition) {
                 try { recognition.stop(); } catch(e) {}
             }
-        });
+
+            if (btnToggleVoiceListen) {
+                btnToggleVoiceListen.classList.add('bg-dark-850', 'text-slate-200', 'border-slate-700');
+                btnToggleVoiceListen.classList.remove('bg-red-600/20', 'border-red-500', 'text-red-400');
+                btnToggleVoiceListen.innerHTML = '<span class="material-symbols-outlined text-[16px]">mic_off</span><span>Voice: Off</span>';
+            }
+            if (btnVoiceInput) {
+                btnVoiceInput.classList.remove('bg-red-600/20', 'border-red-500', 'text-red-400');
+            }
+            if (chatInput) {
+                chatInput.placeholder = "Type or speak to MAITRI...";
+            }
+
+            // Immediately reset audio UI readings
+            livePitchHz = 0;
+            liveVocalTension = 0;
+            if (pitchVal) pitchVal.innerText = "0 Hz (Muted)";
+            if (vocalTensionVal) vocalTensionVal.innerText = "0%";
+            if (serPitchDisplay) serPitchDisplay.innerText = "0 Hz (Muted)";
+            if (serTensionDisplay) serTensionDisplay.innerText = "0%";
+
+            // Draw calm flat baseline
+            if (waveformCanvas && waveformCtx) {
+                waveformCtx.fillStyle = "#090D16";
+                waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+                waveformCtx.strokeStyle = "rgba(99, 102, 241, 0.2)";
+                waveformCtx.lineWidth = 1;
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(0, waveformCanvas.height / 2);
+                waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+                waveformCtx.stroke();
+            }
+        }
+    }
+
+    if (btnToggleVoiceListen) {
+        btnToggleVoiceListen.addEventListener('click', toggleVoiceListening);
+    }
+    if (btnVoiceInput) {
+        btnVoiceInput.addEventListener('click', toggleVoiceListening);
     }
 
     // ---------------------------------------------------------
-    // 4. Live Optical Camera & Audio Prosody Capture
+    // 4. Live Optical Camera & Video Capture
     // ---------------------------------------------------------
     if (btnToggleCamera) {
         btnToggleCamera.addEventListener('click', async () => {
@@ -273,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
-                audio: true
+                audio: isVoiceActive
             });
             videoElem.srcObject = mediaStream;
             await videoElem.play();
@@ -283,7 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btnToggleCamera.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
             btnToggleCamera.classList.add('bg-red-600', 'hover:bg-red-500');
 
-            initAudioAnalyser(mediaStream);
+            if (isVoiceActive) {
+                initAudioAnalyser(mediaStream);
+            }
             renderLiveHudCanvas();
             streamInterval = setInterval(sendFrameToBackend, 250);
             
@@ -292,12 +376,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 opticalLockBadge.className = "px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full";
             }
             if (gracefulDegradeStatus) {
-                gracefulDegradeStatus.innerText = "3 of 3 Modalities Active";
+                gracefulDegradeStatus.innerText = isVoiceActive ? "3 of 3 Modalities Active" : "Vision + Text Active (Voice Muted)";
                 gracefulDegradeStatus.className = "text-xs font-semibold text-emerald-400";
             }
             updatePermissionUI('granted');
         } catch (err) {
-            console.warn("Camera/Mic access error:", err.name, err.message);
+            console.warn("Camera access error:", err.name, err.message);
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 updatePermissionUI('denied');
             } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
@@ -310,7 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopLiveCamera() {
         if (mediaStream) {
-            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream.getVideoTracks().forEach(track => track.stop());
+            if (!isVoiceActive) {
+                mediaStream.getAudioTracks().forEach(track => track.stop());
+            }
         }
         if (streamInterval) clearInterval(streamInterval);
         if (animFrameId) cancelAnimationFrame(animFrameId);
@@ -322,14 +409,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnToggleCamera.classList.remove('bg-red-600', 'hover:bg-red-500');
         
         if (hudCtx) hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
-        if (waveformCtx) waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
         
         if (opticalLockBadge) {
             opticalLockBadge.innerText = "Camera Standby";
             opticalLockBadge.className = "px-2.5 py-0.5 text-xs font-semibold bg-dark-850 border border-slate-800 text-slate-400 rounded-full";
         }
         if (gracefulDegradeStatus) {
-            gracefulDegradeStatus.innerText = "Audio + Text Active (Camera Standby)";
+            gracefulDegradeStatus.innerText = isVoiceActive ? "Voice + Text Active (Camera Standby)" : "System Standby";
             gracefulDegradeStatus.className = "text-xs font-semibold text-amber-400";
         }
     }
@@ -448,41 +534,71 @@ document.addEventListener('DOMContentLoaded', () => {
             hudCtx.fillText(`MAR: ${smoothMar.toFixed(2)}`, boxX + 6, boxY + 32);
             if (hudEarMetric) hudEarMetric.innerText = smoothEar.toFixed(2);
         }
+    }
 
-        // Draw Audio Waveform
-        if (waveformCanvas && waveformCtx && audioAnalyser) {
-            audioAnalyser.getByteTimeDomainData(audioDataArray);
-            audioAnalyser.getFloatTimeDomainData(audioTimeData);
+    // ---------------------------------------------------------
+    // 5. Audio Waveform & Autocorrelation Pitch Extraction
+    // ---------------------------------------------------------
+    let audioAnimFrameId = null;
 
-            const pitch = detectPitchAutocorr(audioTimeData, audioContext.sampleRate);
-            if (pitch > 60 && pitch < 450) {
-                livePitchHz = Math.round(pitch);
-                if (pitchVal) pitchVal.innerText = `${livePitchHz} Hz`;
-                if (serPitchDisplay) serPitchDisplay.innerText = `${livePitchHz} Hz`;
-                
-                liveVocalTension = Math.min(100, Math.max(0, Math.round(((livePitchHz - 128) / 80) * 100)));
-                if (vocalTensionVal) vocalTensionVal.innerText = `${liveVocalTension}%`;
-                if (serTensionDisplay) serTensionDisplay.innerText = `${liveVocalTension}%`;
-            }
+    function renderAudioWaveform() {
+        if (!waveformCanvas || !waveformCtx) return;
 
+        if (!isVoiceActive || !audioAnalyser) {
+            // Microphone is OFF / Muted -> Draw clean flat baseline and clear pitch
             waveformCtx.fillStyle = "#090D16";
             waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-            waveformCtx.lineWidth = 1.5;
-            waveformCtx.strokeStyle = "#818CF8";
+            waveformCtx.strokeStyle = "rgba(99, 102, 241, 0.25)";
+            waveformCtx.lineWidth = 1;
             waveformCtx.beginPath();
-
-            const sliceWidth = waveformCanvas.width * 1.0 / audioDataArray.length;
-            let wx = 0;
-            for (let i = 0; i < audioDataArray.length; i++) {
-                const v = audioDataArray[i] / 128.0;
-                const wy = v * waveformCanvas.height / 2;
-                if (i === 0) waveformCtx.moveTo(wx, wy);
-                else waveformCtx.lineTo(wx, wy);
-                wx += sliceWidth;
-            }
+            waveformCtx.moveTo(0, waveformCanvas.height / 2);
             waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
             waveformCtx.stroke();
+
+            if (pitchVal) pitchVal.innerText = "0 Hz (Muted)";
+            if (vocalTensionVal) vocalTensionVal.innerText = "0%";
+            if (serPitchDisplay) serPitchDisplay.innerText = "0 Hz (Muted)";
+            if (serTensionDisplay) serTensionDisplay.innerText = "0%";
+            return;
         }
+
+        audioAnimFrameId = requestAnimationFrame(renderAudioWaveform);
+
+        audioAnalyser.getByteTimeDomainData(audioDataArray);
+        audioAnalyser.getFloatTimeDomainData(audioTimeData);
+
+        const pitch = detectPitchAutocorr(audioTimeData, audioContext.sampleRate);
+        if (pitch > 60 && pitch < 450) {
+            livePitchHz = Math.round(pitch);
+            if (pitchVal) pitchVal.innerText = `${livePitchHz} Hz`;
+            if (serPitchDisplay) serPitchDisplay.innerText = `${livePitchHz} Hz`;
+            
+            liveVocalTension = Math.min(100, Math.max(0, Math.round(((livePitchHz - 128) / 80) * 100)));
+            if (vocalTensionVal) vocalTensionVal.innerText = `${liveVocalTension}%`;
+            if (serTensionDisplay) serTensionDisplay.innerText = `${liveVocalTension}%`;
+        } else {
+            // Microphone is active, but user is paused/quiet
+            if (pitchVal) pitchVal.innerText = "Quiet (Listening...)";
+            if (vocalTensionVal) vocalTensionVal.innerText = "0%";
+        }
+
+        waveformCtx.fillStyle = "#090D16";
+        waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+        waveformCtx.lineWidth = 1.5;
+        waveformCtx.strokeStyle = "#34D399";
+        waveformCtx.beginPath();
+
+        const sliceWidth = waveformCanvas.width * 1.0 / audioDataArray.length;
+        let wx = 0;
+        for (let i = 0; i < audioDataArray.length; i++) {
+            const v = audioDataArray[i] / 128.0;
+            const wy = v * waveformCanvas.height / 2;
+            if (i === 0) waveformCtx.moveTo(wx, wy);
+            else waveformCtx.lineTo(wx, wy);
+            wx += sliceWidth;
+        }
+        waveformCtx.lineTo(waveformCanvas.width, waveformCanvas.height / 2);
+        waveformCtx.stroke();
     }
 
     // ---------------------------------------------------------
@@ -644,15 +760,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (compFatigue) compFatigue.innerText = `${(components.ocular_fatigue || 5.5).toFixed(1)} pts`;
         if (compTension) compTension.innerText = `${(components.autonomic_tension || 7.0).toFixed(1)} pts`;
 
-        // Physical Vitals
-        const phys = data.physical_distress || {};
-        if (perclosVal) perclosVal.innerText = `${(phys.perclos_percentage || 4.2).toFixed(1)}%`;
-        if (blinkVal) blinkVal.innerText = `${(phys.blink_rate_bpm || 16).toFixed(0)} BPM (Healthy)`;
-        if (yawnVal) yawnVal.innerText = `${phys.yawns_per_min || 0} / min (Normal)`;
-        if (painVal) painVal.innerText = `${(phys.pain_grimace_score || 0).toFixed(0)} / 100`;
-        if (fatigueLevelText) {
-            fatigueLevelText.innerText = phys.fatigue_level ? phys.fatigue_level : 'Nominal / Rested';
-            fatigueLevelText.className = `font-bold ${phys.status_color === 'red' ? 'text-red-400' : (phys.status_color === 'orange' ? 'text-amber-400' : 'text-emerald-400')}`;
+        // Voice & Acoustic Vitals
+        if (!isVoiceActive) {
+            if (pitchVal) pitchVal.innerText = "0 Hz (Muted)";
+            if (vocalTensionVal) vocalTensionVal.innerText = "0%";
+            if (serPitchDisplay) serPitchDisplay.innerText = "0 Hz (Muted)";
+            if (serTensionDisplay) serTensionDisplay.innerText = "0%";
+        } else if (data.ser && !mediaStream && !micAudioStream) {
+            if (pitchVal && data.ser.pitch_hz) pitchVal.innerText = `${Math.round(data.ser.pitch_hz)} Hz`;
+            if (vocalTensionVal && data.ser.vocal_tension !== undefined) vocalTensionVal.innerText = `${Math.round(data.ser.vocal_tension * 100)}%`;
+            if (serPitchDisplay && data.ser.pitch_hz) serPitchDisplay.innerText = `${Math.round(data.ser.pitch_hz)} Hz`;
+            if (serTensionDisplay && data.ser.vocal_tension !== undefined) serTensionDisplay.innerText = `${Math.round(data.ser.vocal_tension * 100)}%`;
         }
 
         // Discordance Alert
@@ -665,8 +783,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Dynamic Rolling Emotion Timeline with Authentic Score
-        updateValenceTimeline(domEmotion, fusion.valence);
+        // Dynamic Rolling Emotion Timeline with Authentic Score (Throttled unless forced)
+        updateValenceTimeline(domEmotion, fusion.valence, isForced);
 
         // Ground Alerts
         if (data.alert_dispatched) {
@@ -761,14 +879,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (btnVoiceInput) {
-        btnVoiceInput.addEventListener('click', () => {
-            if (recognition) {
-                try { recognition.start(); } catch(e) {}
-            }
-        });
-    }
-
     // ---------------------------------------------------------
     // 9. Guided Tactical Box Breathing Pacer
     // ---------------------------------------------------------
@@ -811,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const resp = await fetch(`/api/simulate/${scenario}`, { method: 'POST' });
                 const telemetry = await resp.json();
-                updateDashboardTelemetry(telemetry);
+                updateDashboardTelemetry(telemetry, true);
 
                 if (telemetry.transcript) {
                     appendChatBubble('user', telemetry.transcript);
@@ -891,7 +1001,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------
     // 13. Dynamic Emotion Valence Waveform (Accurate SVG)
     // ---------------------------------------------------------
-    function updateValenceTimeline(domEmotion, valenceScore) {
+    let lastTimelineShiftTime = 0;
+
+    function updateValenceTimeline(domEmotion, valenceScore, isForced = false) {
         if (!timelineValencePath || !timelineActiveNode) return;
         
         let y = 58;
@@ -909,19 +1021,24 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (domEmotion === 'stressed' || domEmotion === 'frustrated') y = 96;
         }
 
-        valenceBuffer.push(y);
-        if (valenceBuffer.length > 20) valenceBuffer.shift();
+        const now = Date.now();
+        // Only scroll/shift timeline if it is an explicit event (scenario/chat) OR 5+ seconds have elapsed
+        if (isForced || (now - lastTimelineShiftTime > 5000)) {
+            valenceBuffer.push(y);
+            if (valenceBuffer.length > 20) valenceBuffer.shift();
+            lastTimelineShiftTime = now;
 
-        const step = 500 / (valenceBuffer.length - 1);
-        let d = `M 0,${valenceBuffer[0]}`;
-        for (let i = 1; i < valenceBuffer.length; i++) {
-            const x = Math.round(i * step);
-            const prevX = Math.round((i - 1) * step);
-            const midX = Math.round((prevX + x) / 2);
-            d += ` C ${midX},${valenceBuffer[i-1]} ${midX},${valenceBuffer[i]} ${x},${valenceBuffer[i]}`;
+            const step = 500 / (valenceBuffer.length - 1);
+            let d = `M 0,${valenceBuffer[0]}`;
+            for (let i = 1; i < valenceBuffer.length; i++) {
+                const x = Math.round(i * step);
+                const prevX = Math.round((i - 1) * step);
+                const midX = Math.round((prevX + x) / 2);
+                d += ` C ${midX},${valenceBuffer[i-1]} ${midX},${valenceBuffer[i]} ${x},${valenceBuffer[i]}`;
+            }
+            timelineValencePath.setAttribute('d', d);
         }
 
-        timelineValencePath.setAttribute('d', d);
         timelineActiveNode.setAttribute('cx', '500');
         timelineActiveNode.setAttribute('cy', y);
         timelineActiveNode.setAttribute('fill', y > 75 ? '#F87171' : (y > 45 ? '#94A3B8' : '#34D399'));
@@ -1043,7 +1160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Initialize Real-Time WebSocket, Sessions, and Permissions
+    // Initialize Real-Time WebSocket, Sessions, and Audio Waveform
     initWebSocket();
     window.loadSessionHistory();
+    renderAudioWaveform();
 });
