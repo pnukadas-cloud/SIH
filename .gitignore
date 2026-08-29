@@ -8,4 +8,5 @@ venv/
 .venv/
 .env
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json

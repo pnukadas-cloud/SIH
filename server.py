@@ -18,6 +18,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import uvicorn
 
 from maitri.config import (
     SYSTEM_NAME, SYSTEM_VERSION, SPACE_STATION, AGENCY,
@@ -130,3 +131,6 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         connected_websockets.discard(websocket)
     except Exception as e:
         connected_websockets.discard(websocket)
+
+if __name__ == "__main__":
+    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
