@@ -26,6 +26,20 @@ class FacialEmotionModule:
         self.active_astronaut_id: str = "CREW-BAS-01"
         self.personal_baselines: Dict[str, Dict[str, float]] = {}
 
+        # Optical Detectors (Haar Cascade Classifiers)
+        self.face_cascade = None
+        self.face_cascade_alt = None
+        self.eye_cascade = None
+        self.smile_cascade = None
+        if hasattr(cv2, 'CascadeClassifier') and hasattr(cv2, 'data'):
+            try:
+                self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+                self.face_cascade_alt = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_alt2.xml')
+                self.eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+                self.smile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_smile.xml')
+            except Exception as e:
+                print(f"[FER] Cascade loading warning: {e}")
+
         # Rolling temporal tracking buffers (60 second window for rates)
         self.blink_timestamps: List[float] = []
         self.yawn_timestamps: List[float] = []
@@ -45,7 +59,7 @@ class FacialEmotionModule:
         self.stable_confidence: float = 0.85
         self.candidate_state: str = "neutral"
         self.candidate_count: int = 0
-        self.required_persistence_frames: int = 3  # ~0.75s to 1.0s persistence
+        self.required_persistence_frames: int = 2  # Fast ~0.5s transition for real-time responsiveness
 
     def set_active_astronaut(self, astronaut_id: str, baseline: Optional[Dict[str, Any]] = None):
         """Associate pipeline with specific astronaut and load their personal baseline."""
@@ -66,7 +80,7 @@ class FacialEmotionModule:
 
         if baseline:
             self.personal_baselines[astronaut_id] = {
-                "resting_ear": float(baseline.get("resting_ear", 0.32)),
+                "resting_ear": float(baseline.get("resting_ear", 0.28)),
                 "resting_mar": float(baseline.get("resting_mar", 0.18)),
                 "blink_rate_bpm": float(baseline.get("blink_rate_bpm", 16.0)),
                 "resting_au04": float(baseline.get("resting_au04", 0.10))
@@ -75,7 +89,7 @@ class FacialEmotionModule:
     def _get_baseline(self, astronaut_id: str) -> Dict[str, float]:
         """Return personal baseline or default normal values."""
         return self.personal_baselines.get(astronaut_id, {
-            "resting_ear": 0.32,
+            "resting_ear": 0.28,
             "resting_mar": 0.18,
             "blink_rate_bpm": 16.0,
             "resting_au04": 0.10
@@ -88,15 +102,14 @@ class FacialEmotionModule:
         faces: List[Tuple[int, int, int, int, float, bool]]
     ) -> Dict[str, Any]:
         """
-        Step 3: Rigorous Face Quality Evaluation.
-        Detects blur, poor lighting, extreme head pose, small face area, and occlusions.
+        Step 3: Face Quality Evaluation.
         """
         h, w = frame.shape[:2]
         mean_brightness = float(np.mean(gray)) if gray.size > 0 else 0.0
         laplacian_var = float(cv2.Laplacian(gray, cv2.CV_64F).var()) if gray.size > 0 else 0.0
 
         if not faces:
-            status = "POOR_LIGHTING" if (5.0 <= mean_brightness < 28.0) else "NO_FACE"
+            status = "POOR_LIGHTING" if (5.0 <= mean_brightness < 25.0) else "NO_FACE"
             msg = "Low cabin illumination; optical features degraded." if status == "POOR_LIGHTING" else "No astronaut face detected in camera viewport."
             return {
                 "valid": False,
@@ -114,7 +127,6 @@ class FacialEmotionModule:
         face_area_ratio = float(face_area) / max(1.0, float(frame_area))
         aspect_ratio = float(fh) / max(1.0, float(fw))
 
-        # Check face region brightness specifically
         face_roi = gray[max(0, fy):min(h, fy+fh), max(0, fx):min(w, fx+fw)]
         face_brightness = float(np.mean(face_roi)) if face_roi.size > 0 else mean_brightness
 
@@ -123,44 +135,26 @@ class FacialEmotionModule:
         valid = True
         quality_score = 1.0
 
-        # 1. Lighting check (mean < 28 or face < 30 is poor; > 230 is overexposed)
-        if mean_brightness < 28.0 or face_brightness < 30.0:
+        if mean_brightness < 20.0 or face_brightness < 22.0:
             status = "POOR_LIGHTING"
             msg = "Low cabin illumination; optical features degraded."
             valid = False
             quality_score *= 0.35
-        elif mean_brightness > 230 or face_brightness > 235:
+        elif mean_brightness > 245 or face_brightness > 248:
             status = "OVEREXPOSED"
             msg = "Severe optical glare or overexposure detected."
             valid = False
             quality_score *= 0.40
 
-        # 2. Extreme head pose / aspect ratio
-        if aspect_ratio < 0.88 or aspect_ratio > 2.15:
+        if aspect_ratio < 0.70 or aspect_ratio > 2.30:
             status = "EXTREME_POSE" if status == "OPTIMAL" else status
-            msg = "Extreme head pose or profile angle detected; landmarks asymmetric."
-            valid = False
-            quality_score *= 0.35
-
-        # 3. Partial occlusion / fragmented contour
-        contour_density = float(area) / max(1.0, float(face_area))
-        if contour_density < 0.65:
-            status = "OCCLUSION" if status == "OPTIMAL" else status
-            msg = "Partial facial occlusion detected (hand or visor obstruction)."
-            valid = False
-            quality_score *= 0.40
-
-        # 4. Sharpness / Blur check
-        if laplacian_var < 15.0:
-            status = "BLURRED" if status == "OPTIMAL" else status
-            msg = "Motion blur or optical defocus detected."
+            msg = "Extreme head pose or profile angle detected."
             valid = False
             quality_score *= 0.45
 
-        # 5. Face size check
-        if face_area_ratio < 0.030:
+        if face_area_ratio < 0.020:
             status = "FACE_TOO_SMALL" if status == "OPTIMAL" else status
-            msg = "Astronaut is too far from camera for accurate landmark extraction."
+            msg = "Astronaut is too far from camera for accurate feature extraction."
             valid = False
             quality_score *= 0.40
 
@@ -176,24 +170,54 @@ class FacialEmotionModule:
 
     def detect_face_multispectral(self, frame: np.ndarray, gray: np.ndarray) -> List[Tuple[int, int, int, int, float, bool]]:
         """
-        Step 2: Multi-Spectral Skin Chrominance Face Localization (YCrCb + HSV).
+        Robust Face Localization:
+        Primary: Multi-scale Haar cascade classifier.
+        Secondary: Alt2 Haar cascade classifier.
+        Tertiary: Skin chrominance contours.
         Returns list of (x, y, w, h, contour_area, is_fallback).
         """
         h, w = frame.shape[:2]
-        min_face_area = int(w * h * 0.025)
-        max_face_area = int(w * h * 0.90)
+        min_w = int(w * 0.12)
+        min_h = int(h * 0.12)
 
-        # 1. YCrCb Skin Filter
+        # 1. Primary Haar frontalface
+        if self.face_cascade is not None and not self.face_cascade.empty():
+            faces = self.face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.12,
+                minNeighbors=4,
+                minSize=(min_w, min_h)
+            )
+            if len(faces) > 0:
+                faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
+                candidates = [(int(x), int(y), int(fw), int(fh), float(fw * fh), False) for (x, y, fw, fh) in faces]
+                self.last_face_box = (candidates[0][0], candidates[0][1], candidates[0][2], candidates[0][3])
+                return candidates
+
+        # 2. Secondary Haar frontalface alt2
+        if self.face_cascade_alt is not None and not self.face_cascade_alt.empty():
+            faces = self.face_cascade_alt.detectMultiScale(
+                gray,
+                scaleFactor=1.12,
+                minNeighbors=4,
+                minSize=(min_w, min_h)
+            )
+            if len(faces) > 0:
+                faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
+                candidates = [(int(x), int(y), int(fw), int(fh), float(fw * fh), False) for (x, y, fw, fh) in faces]
+                self.last_face_box = (candidates[0][0], candidates[0][1], candidates[0][2], candidates[0][3])
+                return candidates
+
+        # 3. Skin Chrominance Fallback
+        min_face_area = int(w * h * 0.04)
+        max_face_area = int(w * h * 0.85)
+
         ycrcb = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
         mask_ycrcb = cv2.inRange(ycrcb, np.array([0, 133, 77], dtype=np.uint8), np.array([255, 173, 127], dtype=np.uint8))
-
-        # 2. HSV Skin Filter
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask_hsv = cv2.inRange(hsv, np.array([0, 25, 45], dtype=np.uint8), np.array([28, 255, 255], dtype=np.uint8))
-
+        mask_hsv = cv2.inRange(hsv, np.array([0, 20, 40], dtype=np.uint8), np.array([30, 255, 255], dtype=np.uint8))
         combined_mask = cv2.bitwise_and(mask_ycrcb, mask_hsv)
 
-        # Morphological operations to bridge facial contours
         kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
         combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_OPEN, kernel_open)
@@ -205,24 +229,17 @@ class FacialEmotionModule:
             area = cv2.contourArea(c)
             if min_face_area <= area <= max_face_area:
                 x, y, fw, fh = cv2.boundingRect(c)
-                candidates.append((x, y, fw, fh, area, False))
+                aspect = fh / max(1.0, float(fw))
+                if 0.75 <= aspect <= 1.85:
+                    candidates.append((x, y, fw, fh, area, False))
 
         if candidates:
-            # Sort by area descending
             candidates.sort(key=lambda item: item[4], reverse=True)
             self.last_face_box = (candidates[0][0], candidates[0][1], candidates[0][2], candidates[0][3])
             return candidates
 
-        # Center Prior Fallback only if sufficient ambient light exists and no contour found
-        mean_val = float(np.mean(gray)) if gray.size > 0 else 0.0
-        if mean_val > 45.0:
-            cw = int(w * 0.42)
-            ch = int(h * 0.58)
-            cx = int((w - cw) / 2)
-            cy = int((h - ch) / 2.3)
-            self.last_face_box = (cx, cy, cw, ch)
-            return [(cx, cy, cw, ch, cw * ch * 0.75, True)]
-
+        # Do NOT generate fake face when no face exists in viewport
+        self.last_face_box = None
         return []
 
     def extract_features(
@@ -252,10 +269,14 @@ class FacialEmotionModule:
         # 2. Detect Faces
         faces = self.detect_face_multispectral(frame, gray)
 
+        # If no face is detected in the frame, return cleanly with face_detected: False
+        if not faces:
+            return self._empty_features(now, "No astronaut face detected in camera viewport", baseline)
+
         # 3. Assess Face Quality
         face_quality = self.assess_face_quality(frame, gray, faces)
 
-        # If quality is invalid, do NOT generate wild emotional changes; decay gracefully
+        # If quality is invalid due to extreme blur / lighting
         if not face_quality["valid"]:
             return self._quality_degraded_features(now, face_quality, baseline)
 
@@ -269,49 +290,117 @@ class FacialEmotionModule:
         # -------------------------------------------------------------
         # 4. Extract Facial Features & Action Units
         # -------------------------------------------------------------
-        # Eye Aspect Ratio (EAR)
-        eye_roi = face_roi[int(rh * 0.20):int(rh * 0.48), int(rw * 0.12):int(rw * 0.88)]
+        # Eye Region Analysis (Upper 55% of face)
+        upper_face = face_roi[int(rh * 0.15):int(rh * 0.55), :]
         ear = baseline["resting_ear"]
-        if eye_roi.size > 0:
-            _, eye_thresh = cv2.threshold(eye_roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            eye_vert = np.sum(eye_thresh, axis=1) / max(1.0, eye_roi.shape[1])
-            active_h = np.count_nonzero(eye_vert > 20)
-            ear_est = active_h / max(1.0, float(eye_roi.shape[0]))
-            ear = float(np.clip(0.12 + (ear_est * 0.35), 0.12, 0.44))
+        is_eye_closed = False
+
+        if self.eye_cascade is not None and not self.eye_cascade.empty() and upper_face.size > 0:
+            eyes = self.eye_cascade.detectMultiScale(
+                upper_face,
+                scaleFactor=1.1,
+                minNeighbors=3,
+                minSize=(int(rw * 0.10), int(rh * 0.08))
+            )
+            if len(eyes) >= 2:
+                eyes_sorted = sorted(eyes, key=lambda e: e[0])
+                left_eye, right_eye = eyes_sorted[0], eyes_sorted[-1]
+                ear_l = float(left_eye[3]) / max(1.0, float(left_eye[2]))
+                ear_r = float(right_eye[3]) / max(1.0, float(right_eye[2]))
+                ear = float(np.clip((ear_l + ear_r) / 2.0, 0.10, 0.45))
+            elif len(eyes) == 1:
+                ear = float(np.clip(eyes[0][3] / max(1.0, float(eyes[0][2])), 0.10, 0.45))
+            else:
+                # Eye cascade did not find open eyes — check if closed or low-light
+                eye_roi_sample = face_roi[int(rh * 0.22):int(rh * 0.46), int(rw * 0.15):int(rw * 0.85)]
+                if eye_roi_sample.size > 0:
+                    eye_var = float(cv2.Sobel(eye_roi_sample, cv2.CV_64F, 0, 1, ksize=3).var())
+                    # Very low vertical edge variance in eye strip indicates closed eyelids
+                    if eye_var < 1500.0:
+                        ear = 0.12
+                        is_eye_closed = True
+                    else:
+                        ear = 0.26
+        else:
+            # Fallback estimation
+            eye_roi_sample = face_roi[int(rh * 0.22):int(rh * 0.46), int(rw * 0.15):int(rw * 0.85)]
+            if eye_roi_sample.size > 0:
+                eye_edges = cv2.Canny(eye_roi_sample, 40, 120)
+                density = float(np.sum(eye_edges > 0) / max(1.0, eye_edges.size))
+                ear = float(np.clip(0.16 + (density * 0.8), 0.12, 0.42))
+
+        # True eye closure requires EAR < 0.15
+        if ear < 0.15:
+            is_eye_closed = True
 
         self.ear_history.append((now, ear))
-        if len(self.ear_history) >= 2 and ear < 0.21 and self.ear_history[-2][1] >= 0.21:
+        # Blink detection
+        if len(self.ear_history) >= 2 and ear < 0.16 and self.ear_history[-2][1] >= 0.16:
             self.blink_timestamps.append(now)
 
-        # Mouth Aspect Ratio (MAR) & Smile (AU12)
-        mouth_roi = face_roi[int(rh * 0.62):int(rh * 0.95), int(rw * 0.15):int(rw * 0.85)]
+        # Mouth Region Analysis (Lower 45% of face)
+        lower_face = face_roi[int(rh * 0.55):int(rh * 0.96), int(rw * 0.12):int(rw * 0.88)]
         mar = baseline["resting_mar"]
+        smile_detected = False
         smile_intensity = 0.0
-        if mouth_roi.size > 0:
-            _, mouth_thresh = cv2.threshold(mouth_roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            mouth_vert = np.sum(mouth_thresh, axis=1) / max(1.0, mouth_roi.shape[1])
-            mouth_h = np.count_nonzero(mouth_vert > 25)
-            mar = float(np.clip(mouth_h / max(1.0, float(mouth_roi.shape[0])), 0.10, 0.85))
+        frown_intensity = 0.0
+        is_yawning = False
 
-            # Mouth active horizontal span relative to ROI
-            mouth_horiz = np.sum(mouth_thresh, axis=0) / max(1.0, mouth_roi.shape[0])
-            active_width_ratio = float(np.count_nonzero(mouth_horiz > 10)) / max(1.0, float(mouth_roi.shape[1]))
-            # Smile expands mouth width significantly (>0.80) with moderate openness (<0.75)
-            if active_width_ratio > 0.80 and mar < 0.75:
-                smile_intensity = float(np.clip((active_width_ratio - 0.78) * 4.5, 0.0, 1.0))
+        if lower_face.size > 0:
+            # 1. Haar Smile Detector
+            if self.smile_cascade is not None and not self.smile_cascade.empty():
+                smiles = self.smile_cascade.detectMultiScale(
+                    lower_face,
+                    scaleFactor=1.18,
+                    minNeighbors=6,
+                    minSize=(int(rw * 0.18), int(rh * 0.08))
+                )
+                if len(smiles) > 0:
+                    smile_detected = True
+                    smile_intensity = float(min(1.0, 0.50 + len(smiles) * 0.25))
+
+            # 2. Geometric Mouth Analysis (Otsu segmentation)
+            _, mouth_thresh = cv2.threshold(lower_face, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            mouth_vert = np.sum(mouth_thresh, axis=1) / max(1.0, lower_face.shape[1])
+            mouth_h = np.count_nonzero(mouth_vert > 20)
+            mouth_horiz = np.sum(mouth_thresh, axis=0) / max(1.0, lower_face.shape[0])
+            mouth_w = np.count_nonzero(mouth_horiz > 15)
+
+            lh, lw = lower_face.shape[:2]
+            mar = float(np.clip(mouth_h / max(1.0, float(mouth_w)), 0.10, 0.85))
+            mw_ratio = float(mouth_w) / max(1.0, float(rw))
+
+            # Smile expands mouth horizontally (>0.44 of face width) with moderate openness
+            if mw_ratio > 0.44 and mar < 0.50:
+                geom_smile = float(np.clip((mw_ratio - 0.42) * 4.0, 0.0, 1.0))
+                smile_intensity = max(smile_intensity, geom_smile)
+                if geom_smile > 0.35:
+                    smile_detected = True
+
+            # Frown (AU15 / Lip Corner Depressor): Mouth compressed downward with narrow width and corners drooping
+            if not smile_detected and mw_ratio < 0.40 and mar < 0.22:
+                # Check bottom row variance indicating downward turned lips
+                lower_lip_strip = mouth_thresh[int(lh * 0.6):, :]
+                if lower_lip_strip.size > 0:
+                    frown_intensity = float(np.clip(0.35 + (0.22 - mar) * 2.5, 0.0, 0.90))
+
+            # Yawn Detection: Sustained wide mouth opening (MAR > 0.68) without smiling
+            if not smile_detected and mar > 0.68:
+                is_yawning = True
+                if not self.yawn_timestamps or (now - self.yawn_timestamps[-1] > 4.0):
+                    self.yawn_timestamps.append(now)
 
         self.mar_history.append((now, mar))
-        if mar > 0.52 and (not self.yawn_timestamps or (now - self.yawn_timestamps[-1] > 3.0)):
-            self.yawn_timestamps.append(now)
 
-        # Forehead Strain / Brow Furrow (AU04) on Glabella region
-        # Focused specifically between eyebrows to avoid boundary hairline artifacts
-        glabella_roi = face_roi[int(rh * 0.20):int(rh * 0.38), int(rw * 0.35):int(rw * 0.65)]
+        # Brow Furrow / Glabella Strain (AU04)
+        glabella_roi = face_roi[int(rh * 0.18):int(rh * 0.38), int(rw * 0.35):int(rw * 0.65)]
         brow_furrow = baseline["resting_au04"]
         if glabella_roi.size > 0:
+            sobelx = cv2.Sobel(glabella_roi, cv2.CV_64F, 1, 0, ksize=3)
             sobely = cv2.Sobel(glabella_roi, cv2.CV_64F, 0, 1, ksize=3)
-            sobely_var = float(np.var(sobely))
-            brow_furrow = float(np.clip((sobely_var - 8000.0) / 25000.0, 0.05, 0.95))
+            glabella_var = float(np.var(sobelx) + np.var(sobely))
+            # Intense forehead creases elevate variance above baseline
+            brow_furrow = float(np.clip((glabella_var - 6000.0) / 28000.0, 0.05, 0.95))
 
         # Purge rolling buffers older than 60s
         cutoff = now - 60.0
@@ -320,13 +409,17 @@ class FacialEmotionModule:
         self.ear_history = [(t, v) for t, v in self.ear_history if t >= cutoff]
         self.mar_history = [(t, v) for t, v in self.mar_history if t >= cutoff]
 
-        perclos = float(sum(1 for _, e in self.ear_history if e < 0.21) / max(1, len(self.ear_history)))
+        # PERCLOS: Only meaningful with at least 15 rolling frames to avoid false spikes
+        if len(self.ear_history) >= 15:
+            closed_count = sum(1 for _, e in self.ear_history if e < 0.15)
+            perclos = float(closed_count / len(self.ear_history))
+        else:
+            perclos = 0.0
+
         blinks_per_min = float(len(self.blink_timestamps))
         yawns_per_min = len(self.yawn_timestamps)
 
-        # -------------------------------------------------------------
-        # 5. Personal Baseline Comparison
-        # -------------------------------------------------------------
+        # Baseline comparisons
         base_ear = baseline["resting_ear"]
         base_mar = baseline["resting_mar"]
         base_blinks = baseline["blink_rate_bpm"]
@@ -337,89 +430,90 @@ class FacialEmotionModule:
         delta_blinks = blinks_per_min - base_blinks
         delta_au04 = brow_furrow - base_au04
 
-        # Adaptive baseline gentle update during high-quality nominal periods
-        if face_quality["quality_score"] > 0.85 and brow_furrow < 0.25 and perclos < 0.05:
-            baseline["resting_ear"] = round(base_ear * 0.99 + ear * 0.01, 3)
-            baseline["resting_mar"] = round(base_mar * 0.99 + mar * 0.01, 3)
-            self.personal_baselines[self.active_astronaut_id] = baseline
+        # -------------------------------------------------------------
+        # 5. FACS Logits for All 7 Discrete Emotion Classes
+        # -------------------------------------------------------------
+        logits: Dict[str, float] = {}
+
+        # 1. Happy: Smile AU12, elevated lip corners, cheek raise AU06
+        logits["happy"] = (smile_intensity * 4.5) + (1.2 if smile_detected else 0.0) - (brow_furrow * 2.2) - (perclos * 3.0)
+
+        # 2. Stressed: Brow furrow AU04, eye narrowing/tension (0.16-0.23), lip stretch AU20
+        au20_stretch = float(np.clip(mar * 0.8, 0.0, 1.0))
+        logits["stressed"] = (brow_furrow * 3.6) + (au20_stretch * 1.8) + (0.8 if (0.16 <= ear <= 0.23 and mar < 0.25) else 0.0) - (smile_intensity * 3.5)
+
+        # 3. Frustrated: Intense brow furrow AU04 + jaw clenching / compressed mouth
+        logits["frustrated"] = (brow_furrow * 4.2) + (1.2 if mar < 0.16 and brow_furrow > 0.35 else 0.0) - (smile_intensity * 4.0)
+
+        # 4. Sad: Frown AU15 (corners down), drooping affect, low energy
+        logits["sad"] = (frown_intensity * 3.8) + (0.8 if mar < 0.18 and brow_furrow > 0.20 and smile_intensity < 0.1 else 0.0) - (smile_intensity * 4.0)
+
+        # 5. Anxious: Wide open eyes (high EAR > 0.30), open mouth / gasp (MAR > 0.26), brow tension
+        wide_eye = max(0.0, (ear - 0.28) * 14.0)
+        open_mouth = max(0.0, (mar - 0.26) * 8.0)
+        logits["anxious"] = wide_eye + open_mouth + (brow_furrow * 1.2) - (smile_intensity * 2.5)
+
+        # 6. Fatigued: True eye closure (EAR < 0.15), valid PERCLOS > 0.25, or sustained yawn
+        eye_closure_fatigue = 3.8 if is_eye_closed else 0.0
+        perclos_fatigue = (perclos * 4.0) if (len(self.ear_history) >= 15 and perclos > 0.25) else 0.0
+        yawn_fatigue = 3.2 if is_yawning else 0.0
+        logits["fatigued"] = eye_closure_fatigue + perclos_fatigue + yawn_fatigue - (smile_intensity * 3.0)
+
+        # 7. Neutral: Baseline when action units are relaxed and resting
+        logits["neutral"] = 2.2 - (smile_intensity * 3.0) - (brow_furrow * 2.8) - (frown_intensity * 2.8) - (wide_eye * 2.5) - (eye_closure_fatigue * 2.0) - (perclos_fatigue * 2.0)
+
+        # Softmax Normalization
+        exp_logits = {k: np.exp(np.clip(v, -5.0, 5.0)) for k, v in logits.items()}
+        total_exp = sum(exp_logits.values())
+        norm_frame_probs = {k: float(v / total_exp) for k, v in exp_logits.items()}
 
         # -------------------------------------------------------------
-        # 6. Frame-Level Observation Probabilities
+        # 6. Temporal Smoothing & State Hysteresis
         # -------------------------------------------------------------
-        frame_probs = {c: 0.04 for c in self.classes}
-
-        # Stress indicator: brow furrow elevation + excessive blink or mouth tension
-        stress_indicator = float(np.clip(max(0.0, delta_au04 * 1.5) + (0.3 if delta_blinks > 8 else 0.0), 0.0, 1.0))
-        # Fatigue indicator: eye droop (negative delta EAR) + PERCLOS + yawns
-        fatigue_indicator = float(np.clip((perclos * 2.5) + max(0.0, -delta_ear * 2.0) + (yawns_per_min * 0.2), 0.0, 1.0))
-
-        if smile_intensity > 0.35 and stress_indicator < 0.3:
-            frame_probs["happy"] = 0.55 + (smile_intensity * 0.35)
-            frame_probs["neutral"] = 0.15
-        elif stress_indicator > 0.35:
-            frame_probs["stressed"] = 0.50 + (stress_indicator * 0.40)
-            frame_probs["frustrated"] = 0.20
-            frame_probs["neutral"] = 0.10
-        elif fatigue_indicator > 0.35:
-            frame_probs["fatigued"] = 0.50 + (fatigue_indicator * 0.40)
-            frame_probs["neutral"] = 0.15
-        elif delta_blinks > 10.0:
-            frame_probs["anxious"] = 0.45
-            frame_probs["neutral"] = 0.25
-        else:
-            frame_probs["neutral"] = 0.75
-            frame_probs["happy"] = 0.10
-            frame_probs["fatigued"] = 0.07
-
-        # Normalize frame probabilities
-        frame_tot = sum(frame_probs.values())
-        norm_frame_probs = {k: v / frame_tot for k, v in frame_probs.items()}
-
-        # -------------------------------------------------------------
-        # 7. Temporal Smoothing & State Hysteresis (Phase 2 Core)
-        # -------------------------------------------------------------
-        # Exponential Moving Average (alpha = 0.25, smoothing window ~2.5s)
-        alpha = 0.25
+        # Fast responsive alpha = 0.45 (~0.5s transition time)
+        alpha = 0.45
         for c in self.classes:
             self.ema_probabilities[c] = (alpha * norm_frame_probs[c]) + ((1.0 - alpha) * self.ema_probabilities[c])
 
         ema_tot = sum(self.ema_probabilities.values())
         smoothed_probs = {k: round(v / ema_tot, 4) for k, v in self.ema_probabilities.items()}
 
-        # Leading smoothed candidate
+        # Leading candidate
         leading_candidate = max(smoothed_probs.items(), key=lambda item: item[1])[0]
 
-        # State Hysteresis: Require consecutive candidate persistence to avoid frame-flipping
+        # State Hysteresis: Require consecutive candidate persistence
         if leading_candidate == self.candidate_state:
             self.candidate_count += 1
         else:
             self.candidate_state = leading_candidate
             self.candidate_count = 1
 
-        # Only transition stable state if candidate has persisted for N frames
-        if self.candidate_count >= self.required_persistence_frames and smoothed_probs[leading_candidate] > 0.35:
+        if self.candidate_count >= self.required_persistence_frames and smoothed_probs[leading_candidate] > 0.32:
             self.stable_dominant_emotion = leading_candidate
             self.stable_facial_state = self.state_labels.get(leading_candidate, "relaxed")
 
         self.recent_state_history.append(self.stable_dominant_emotion)
-        if len(self.recent_state_history) > 10:
+        if len(self.recent_state_history) > 8:
             self.recent_state_history.pop(0)
 
-        # Temporal stability confidence
         consistency = float(self.recent_state_history.count(self.stable_dominant_emotion)) / len(self.recent_state_history)
-        final_confidence = float(np.clip(smoothed_probs[self.stable_dominant_emotion] * 0.6 + consistency * 0.3 + face_quality["quality_score"] * 0.1, 0.45, 0.96))
+        final_confidence = float(np.clip(smoothed_probs[self.stable_dominant_emotion] * 0.65 + consistency * 0.25 + face_quality["quality_score"] * 0.10, 0.45, 0.98))
 
         # Valence & Arousal
-        valence = (smoothed_probs.get("happy", 0.0) * 0.9) - (smoothed_probs.get("stressed", 0.0) * 0.6) - (smoothed_probs.get("fatigued", 0.0) * 0.4) - (smoothed_probs.get("frustrated", 0.0) * 0.7)
-        arousal = (smoothed_probs.get("stressed", 0.0) * 0.8) + (smoothed_probs.get("anxious", 0.0) * 0.7) + (smoothed_probs.get("happy", 0.0) * 0.5) - (smoothed_probs.get("fatigued", 0.0) * 0.6)
+        valence = (smoothed_probs.get("happy", 0.0) * 0.9) - (smoothed_probs.get("stressed", 0.0) * 0.6) - (smoothed_probs.get("fatigued", 0.0) * 0.4) - (smoothed_probs.get("frustrated", 0.0) * 0.7) - (smoothed_probs.get("sad", 0.0) * 0.8)
+        arousal = (smoothed_probs.get("stressed", 0.0) * 0.8) + (smoothed_probs.get("anxious", 0.0) * 0.85) + (smoothed_probs.get("happy", 0.0) * 0.5) + (smoothed_probs.get("frustrated", 0.0) * 0.75) - (smoothed_probs.get("fatigued", 0.0) * 0.6) - (smoothed_probs.get("sad", 0.0) * 0.4)
+
+        stress_indicator = float(np.clip((brow_furrow * 0.6) + (smoothed_probs.get("stressed", 0.0) * 0.4), 0.0, 1.0))
+        fatigue_indicator = float(np.clip((perclos * 2.0) + (1.0 if is_eye_closed else 0.0) * 0.5 + (0.5 if is_yawning else 0.0), 0.0, 1.0))
 
         action_units = {
             "AU04_brow_furrow": round(brow_furrow, 3),
             "AU06_cheek_raiser": round(smile_intensity * 0.75, 3),
             "AU12_lip_corner_puller": round(smile_intensity, 3),
+            "AU15_lip_corner_depressor": round(frown_intensity, 3),
             "AU20_lip_stretcher": round(float(np.clip(mar * 0.8, 0.0, 1.0)), 3),
             "AU25_lips_part": round(float(1.0 if mar > 0.35 else mar / 0.35), 3),
-            "AU43_eye_closure": round(float(1.0 if ear < 0.21 else 0.0), 3)
+            "AU43_eye_closure": round(float(1.0 if is_eye_closed else 0.0), 3)
         }
 
         return {
@@ -433,6 +527,7 @@ class FacialEmotionModule:
                 "mouth_aspect_ratio": round(mar, 3),
                 "brow_tension_au04": round(brow_furrow, 3),
                 "smile_intensity_au12": round(smile_intensity, 3),
+                "frown_intensity_au15": round(frown_intensity, 3),
                 "blink_rate_bpm": round(blinks_per_min, 1),
                 "perclos": round(perclos, 4),
                 "yawns_per_min": yawns_per_min
@@ -466,11 +561,12 @@ class FacialEmotionModule:
         }
 
     def _quality_degraded_features(self, timestamp: float, face_quality: Dict[str, Any], baseline: Dict[str, float]) -> Dict[str, Any]:
-        """Gracefully hold previous stable state with lowered confidence when optical quality is degraded."""
+        """Gracefully hold standby state when optical quality is degraded or no face is found."""
+        is_no_face = face_quality.get("status") == "NO_FACE"
         return {
             "astronaut_id": self.active_astronaut_id,
-            "facial_state": self.stable_facial_state,
-            "dominant_emotion": self.stable_dominant_emotion,
+            "facial_state": "standby" if is_no_face else self.stable_facial_state,
+            "dominant_emotion": "standby" if is_no_face else self.stable_dominant_emotion,
             "stress_indicator": 0.0,
             "fatigue_indicator": 0.0,
             "facial_indicators": {
@@ -478,11 +574,12 @@ class FacialEmotionModule:
                 "mouth_aspect_ratio": baseline["resting_mar"],
                 "brow_tension_au04": baseline["resting_au04"],
                 "smile_intensity_au12": 0.0,
+                "frown_intensity_au15": 0.0,
                 "blink_rate_bpm": baseline["blink_rate_bpm"],
                 "perclos": 0.0,
                 "yawns_per_min": 0
             },
-            "confidence": 0.30,
+            "confidence": 0.0 if is_no_face else 0.30,
             "face_quality": face_quality,
             "baseline_comparison": {
                 "baseline_ear": baseline["resting_ear"],
@@ -492,21 +589,21 @@ class FacialEmotionModule:
                 "baseline_blinks": baseline["blink_rate_bpm"],
                 "blink_deviation": 0.0
             },
-            "face_detected": face_quality.get("status") in ["OPTIMAL", "OCCLUSION", "BLURRED", "FACE_TOO_SMALL"],
-            "face_count": 1 if face_quality.get("status") in ["OPTIMAL", "OCCLUSION", "BLURRED", "FACE_TOO_SMALL"] else 0,
+            "face_detected": not is_no_face,
+            "face_count": 0 if is_no_face else 1,
             "multiple_faces": False,
-            "face_bounding_box": self.last_face_box,
+            "face_bounding_box": None if is_no_face else self.last_face_box,
             "lighting": face_quality,
             "eye_aspect_ratio": baseline["resting_ear"],
             "mouth_aspect_ratio": baseline["resting_mar"],
             "blinks_per_min": baseline["blink_rate_bpm"],
             "yawns_per_min": 0,
             "perclos": 0.0,
-            "action_units": {au: 0.0 for au in ["AU04_brow_furrow", "AU06_cheek_raiser", "AU12_lip_corner_puller", "AU20_lip_stretcher", "AU25_lips_part", "AU43_eye_closure"]},
-            "probabilities": self.ema_probabilities,
+            "action_units": {au: 0.0 for au in ["AU04_brow_furrow", "AU06_cheek_raiser", "AU12_lip_corner_puller", "AU15_lip_corner_depressor", "AU20_lip_stretcher", "AU25_lips_part", "AU43_eye_closure"]},
+            "probabilities": {c: (1.0 if c == 'neutral' else 0.0) for c in self.classes},
             "valence": 0.0,
-            "arousal": 0.15,
-            "modality_active": False,
+            "arousal": 0.0,
+            "modality_active": not is_no_face,
             "timestamp": timestamp
         }
 
@@ -524,3 +621,4 @@ class FacialEmotionModule:
             },
             baseline=baseline
         )
+

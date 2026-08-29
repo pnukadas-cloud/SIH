@@ -194,10 +194,12 @@ class MasterPipelineService:
         fused_res = self.fusion.fuse(fer_res, ser_res, text_res)
 
         # 3. Well-Being Evaluation
+        face_is_detected = fer_res.get("face_detected", False)
+        fused_res["face_detected"] = face_is_detected
         physical_features = {
-            "perclos_percentage": fer_res.get("perclos", 0.04) * 100.0,
-            "yawns_per_min": fer_res.get("yawns_per_min", 0),
-            "blinks_per_min": fer_res.get("blinks_per_min", 16.0)
+            "perclos_percentage": (fer_res.get("perclos", 0.0) * 100.0) if face_is_detected else 0.0,
+            "yawns_per_min": fer_res.get("yawns_per_min", 0) if face_is_detected else 0,
+            "blinks_per_min": fer_res.get("blinks_per_min", 16.0) if face_is_detected else 0.0
         }
         wellbeing_res = self.wellbeing.evaluate_wellbeing(
             fused_res,
@@ -317,7 +319,12 @@ class MasterPipelineService:
                 "perclos_percentage": physical_features["perclos_percentage"],
                 "blink_rate_bpm": physical_features["blinks_per_min"],
                 "yawns_per_min": physical_features["yawns_per_min"],
-                "fatigue_level": "Severe" if physical_features["perclos_percentage"] > 12.0 else ("Moderate" if physical_features["perclos_percentage"] > 8.0 else "Nominal / Rested"),
+                "fatigue_level": (
+                    "Standby (No Face Detected)" if not fer_res.get("face_detected", False)
+                    else ("Severe Exhaustion" if physical_features["perclos_percentage"] > 25.0 or physical_features["yawns_per_min"] >= 3
+                    else ("Moderate Fatigue" if physical_features["perclos_percentage"] > 15.0 or physical_features["yawns_per_min"] >= 1
+                    else "Nominal / Rested"))
+                ),
                 "status_color": wellbeing_res["status_color"]
             },
             "recommended_intervention": selected_intervention,

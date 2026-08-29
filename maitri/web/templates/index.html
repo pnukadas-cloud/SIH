@@ -353,9 +353,9 @@
                         <p class="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
                             <span>Callsign: <strong id="hud-astronaut-callsign" class="text-slate-200">GARUDA-1</strong></span>
                             <span>·</span>
-                            <span>Well-Being: <strong id="hud-astronaut-wellbeing" class="text-emerald-400 font-semibold">NOMINAL</strong></span>
+                            <span>Well-Being: <strong id="hud-astronaut-wellbeing" class="text-slate-400 font-semibold">STANDBY</strong></span>
                             <span>·</span>
-                            <span>Risk Score: <strong id="hud-astronaut-risk" class="text-slate-200">12 / 100</strong></span>
+                            <span>Risk Score: <strong id="hud-astronaut-risk" class="text-slate-200">-- / 100</strong></span>
                             <span>·</span>
                             <span>Session: <strong id="hud-astronaut-session" class="text-indigo-300 font-mono text-[11px]">SESS-AST-001-ACTIVE</strong></span>
                         </p>
@@ -475,18 +475,18 @@
                         <div class="flex items-center justify-between pt-1">
                             <div>
                                 <span class="text-xs text-slate-400 block mb-1">Primary Detected Emotion:</span>
-                                <h3 id="dominant-emotion-text" class="text-3xl font-extrabold text-white tracking-tight">
-                                    Calm / Neutral
+                                <h3 id="dominant-emotion-text" class="text-3xl font-extrabold text-slate-400 tracking-tight">
+                                    Standby
                                 </h3>
                                 <div class="flex items-center gap-3 text-xs text-slate-400 mt-2">
-                                    <span>Confidence: <strong id="dominant-emotion-conf" class="text-emerald-400 font-bold">85%</strong></span>
+                                    <span>Confidence: <strong id="dominant-emotion-conf" class="text-slate-400 font-bold">--</strong></span>
                                     <span>·</span>
-                                    <span>Duration: <strong id="state-duration-text" class="text-slate-200">14m 32s</strong></span>
+                                    <span>Duration: <strong id="state-duration-text" class="text-slate-400">--</strong></span>
                                 </div>
                             </div>
-                            <div id="emotion-trend-badge" class="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-xs flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-base">trending_flat</span>
-                                <span>Stable</span>
+                            <div id="emotion-trend-badge" class="px-3.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-semibold text-xs flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-base">sensors_off</span>
+                                <span>Camera Standby</span>
                             </div>
                         </div>
                     </div>
@@ -502,20 +502,20 @@
                             <div>
                                 <span class="text-xs text-slate-400 block mb-1">Distress Severity Index:</span>
                                 <div class="flex items-baseline gap-2">
-                                    <span id="risk-score-value" class="text-4xl font-extrabold text-emerald-400 tracking-tight">12.5</span>
+                                    <span id="risk-score-value" class="text-4xl font-extrabold text-slate-500 tracking-tight">--</span>
                                     <span class="text-xs text-slate-400 font-medium">/ 100</span>
                                 </div>
                             </div>
-                            <div id="risk-level-badge" class="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                                <span>Level 0: Nominal</span>
+                            <div id="risk-level-badge" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-bold text-xs flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                                <span>Standby: Camera Offline</span>
                             </div>
                         </div>
 
                         <!-- Severity Bar -->
                         <div class="flex flex-col gap-1 pt-1">
                             <div class="w-full bg-dark-950 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-800">
-                                <div id="risk-bar-fill" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 15%"></div>
+                                <div id="risk-bar-fill" class="h-full bg-slate-700 rounded-full transition-all duration-300" style="width: 0%"></div>
                             </div>
                             <div class="flex justify-between text-[10px] text-slate-500 font-medium">
                                 <span>Nominal (0-30)</span>
@@ -529,15 +529,15 @@
                         <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-xs">
                             <div class="bg-dark-850 p-2 rounded-lg border border-slate-800">
                                 <span class="text-slate-400 block text-[10px]">Affect Valence</span>
-                                <strong id="comp-affect" class="text-slate-200">0.0 pts</strong>
+                                <strong id="comp-affect" class="text-slate-400">-- pts</strong>
                             </div>
                             <div class="bg-dark-850 p-2 rounded-lg border border-slate-800">
                                 <span class="text-slate-400 block text-[10px]">Ocular Fatigue</span>
-                                <strong id="comp-fatigue" class="text-slate-200">5.5 pts</strong>
+                                <strong id="comp-fatigue" class="text-slate-400">-- pts</strong>
                             </div>
                             <div class="bg-dark-850 p-2 rounded-lg border border-slate-800">
                                 <span class="text-slate-400 block text-[10px]">Vocal Tension</span>
-                                <strong id="comp-tension" class="text-slate-200">7.0 pts</strong>
+                                <strong id="comp-tension" class="text-slate-400">-- pts</strong>
                             </div>
                         </div>
                     </div>

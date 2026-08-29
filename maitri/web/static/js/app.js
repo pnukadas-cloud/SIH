@@ -102,10 +102,107 @@ document.addEventListener('DOMContentLoaded', () => {
     let liveRmsEnergy = 0;
     let liveVocalTension = 0;
     let faceBox = null;
-    let smoothEar = 0.31;
+    let isFaceDetected = false;
+    let smoothEar = 0.28;
     let smoothMar = 0.20;
     let missionStartTime = Date.now() - (4 * 3600 + 12 * 60 + 33) * 1000;
     let stateStartTimestamp = Date.now() - (14 * 60 + 32) * 1000;
+
+    // Standby State Reset across HUD
+    function setSensorStandbyState(isSearchingFace = false) {
+        isFaceDetected = false;
+        faceBox = null;
+
+        if (isSearchingFace) {
+            if (domEmotionText) {
+                domEmotionText.innerText = "No Face Detected";
+                domEmotionText.className = "text-2xl font-extrabold text-amber-400 tracking-tight";
+            }
+            if (domEmotionConf) domEmotionConf.innerText = "0%";
+            if (emotionTrendBadge) {
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">center_focus_weak</span><span>Align Face</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold text-xs flex items-center gap-1.5';
+            }
+            if (riskScoreVal) {
+                riskScoreVal.innerText = "--";
+                riskScoreVal.className = "text-4xl font-extrabold tracking-tight text-slate-500";
+            }
+            if (riskBadge) {
+                riskBadge.className = 'px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 bg-amber-500/10 border-amber-500/30 text-amber-400';
+                riskBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>Awaiting Face Lock</span>';
+            }
+            if (riskBarFill) {
+                riskBarFill.style.width = "0%";
+                riskBarFill.className = "h-full rounded-full bg-slate-700 transition-all duration-300";
+            }
+            if (riskHorizonStatus) {
+                riskHorizonStatus.innerText = "Awaiting Face Lock";
+                riskHorizonStatus.className = "font-bold text-amber-400";
+            }
+            if (fatigueLevelText) {
+                fatigueLevelText.innerText = "Awaiting Face Lock";
+                fatigueLevelText.className = "text-xs font-semibold text-amber-400";
+            }
+            if (perclosVal) perclosVal.innerText = "0.0%";
+            if (hudEarMetric) hudEarMetric.innerText = "--";
+            if (blinkVal) blinkVal.innerText = "0 / min";
+            if (yawnVal) yawnVal.innerText = "0";
+            if (painVal) painVal.innerText = "0%";
+            if (compAffect) compAffect.innerText = "-- pts";
+            if (compFatigue) compFatigue.innerText = "-- pts";
+            if (compTension) compTension.innerText = "-- pts";
+            if (hudAstronautWellbeing) {
+                hudAstronautWellbeing.innerText = "ALIGN FACE";
+                hudAstronautWellbeing.className = "text-amber-400 font-semibold";
+            }
+            if (hudAstronautRisk) hudAstronautRisk.innerText = "-- / 100";
+        } else {
+            // Camera completely offline
+            if (domEmotionText) {
+                domEmotionText.innerText = "Standby";
+                domEmotionText.className = "text-3xl font-extrabold text-slate-400 tracking-tight";
+            }
+            if (domEmotionConf) domEmotionConf.innerText = "--";
+            if (emotionTrendBadge) {
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">sensors_off</span><span>Camera Standby</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-semibold text-xs flex items-center gap-1.5';
+            }
+            if (riskScoreVal) {
+                riskScoreVal.innerText = "--";
+                riskScoreVal.className = "text-4xl font-extrabold tracking-tight text-slate-500";
+            }
+            if (riskBadge) {
+                riskBadge.className = 'px-3 py-1.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 bg-slate-800 border border-slate-700 text-slate-400';
+                riskBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-500"></span><span>Standby: Camera Offline</span>';
+            }
+            if (riskBarFill) {
+                riskBarFill.style.width = "0%";
+                riskBarFill.className = "h-full rounded-full bg-slate-700 transition-all duration-300";
+            }
+            if (riskHorizonStatus) {
+                riskHorizonStatus.innerText = "System Standby";
+                riskHorizonStatus.className = "font-bold text-slate-400";
+            }
+            if (fatigueLevelText) {
+                fatigueLevelText.innerText = "Standby (Camera Offline)";
+                fatigueLevelText.className = "text-xs font-semibold text-slate-400";
+            }
+            if (perclosVal) perclosVal.innerText = "--";
+            if (hudEarMetric) hudEarMetric.innerText = "--";
+            if (blinkVal) blinkVal.innerText = "--";
+            if (yawnVal) yawnVal.innerText = "--";
+            if (painVal) painVal.innerText = "--";
+            if (compAffect) compAffect.innerText = "-- pts";
+            if (compFatigue) compFatigue.innerText = "-- pts";
+            if (compTension) compTension.innerText = "-- pts";
+            if (hudAstronautWellbeing) {
+                hudAstronautWellbeing.innerText = "STANDBY";
+                hudAstronautWellbeing.className = "text-slate-400 font-semibold";
+            }
+            if (hudAstronautRisk) hudAstronautRisk.innerText = "-- / 100";
+            if (stateDurationText) stateDurationText.innerText = "--";
+        }
+    }
 
     // ---------------------------------------------------------
     // 1. Mission Clock & Timers
@@ -418,6 +515,9 @@ document.addEventListener('DOMContentLoaded', () => {
             gracefulDegradeStatus.innerText = isVoiceActive ? "Voice + Text Active (Camera Standby)" : "System Standby";
             gracefulDegradeStatus.className = "text-xs font-semibold text-amber-400";
         }
+
+        // Clean standby reset across all well-being and affect cards
+        setSensorStandbyState(false);
     }
 
     // ---------------------------------------------------------
@@ -489,18 +589,52 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear transparent overlay so native video plays underneath
             hudCtx.clearRect(0, 0, w, h);
 
-            const boxW = faceBox ? faceBox.fw : Math.floor(w * 0.40);
-            const boxH = faceBox ? faceBox.fh : Math.floor(h * 0.55);
-            const boxX = faceBox ? faceBox.x : Math.floor((w - boxW) / 2);
-            const boxY = faceBox ? faceBox.y : Math.floor((h - boxH) / 2.2);
+            if (!isFaceDetected || !faceBox) {
+                // Draw searching / alignment reticle
+                const scanW = Math.floor(w * 0.45);
+                const scanH = Math.floor(h * 0.60);
+                const scanX = Math.floor((w - scanW) / 2);
+                const scanY = Math.floor((h - scanH) / 2.2);
 
-            // Reticle Target Box
-            hudCtx.strokeStyle = "rgba(99, 102, 241, 0.85)";
+                hudCtx.save();
+                hudCtx.setLineDash([8, 6]);
+                hudCtx.strokeStyle = "rgba(245, 158, 11, 0.75)";
+                hudCtx.lineWidth = 2;
+                hudCtx.strokeRect(scanX, scanY, scanW, scanH);
+                hudCtx.restore();
+
+                // Corner accents in amber
+                const len = 20;
+                hudCtx.strokeStyle = "#F59E0B";
+                hudCtx.lineWidth = 3;
+                hudCtx.beginPath();
+                hudCtx.moveTo(scanX, scanY + len); hudCtx.lineTo(scanX, scanY); hudCtx.lineTo(scanX + len, scanY);
+                hudCtx.moveTo(scanX + scanW - len, scanY); hudCtx.lineTo(scanX + scanW, scanY); hudCtx.lineTo(scanX + scanW, scanY + len);
+                hudCtx.moveTo(scanX, scanY + scanH - len); hudCtx.lineTo(scanX, scanY + scanH); hudCtx.lineTo(scanX + len, scanY + scanH);
+                hudCtx.moveTo(scanX + scanW - len, scanY + scanH); hudCtx.lineTo(scanX + scanW, scanY + scanH); hudCtx.lineTo(scanX + scanW, scanY + scanH - len);
+                hudCtx.stroke();
+
+                // Tag
+                hudCtx.fillStyle = "rgba(9, 13, 22, 0.85)";
+                hudCtx.fillRect(scanX, scanY - 26, 210, 22);
+                hudCtx.font = "bold 11px Inter, sans-serif";
+                hudCtx.fillStyle = "#F59E0B";
+                hudCtx.fillText("OPTICAL SCANNER: SEARCHING FACE", scanX + 8, scanY - 11);
+                return;
+            }
+
+            const boxW = faceBox.fw;
+            const boxH = faceBox.fh;
+            const boxX = faceBox.x;
+            const boxY = faceBox.y;
+
+            // Reticle Target Box (Cyan / Emerald Optical Lock)
+            hudCtx.strokeStyle = "rgba(52, 211, 153, 0.85)";
             hudCtx.lineWidth = 2;
             hudCtx.strokeRect(boxX, boxY, boxW, boxH);
 
             // Corner Accents
-            const len = 18;
+            const len = 20;
             hudCtx.strokeStyle = "#34D399";
             hudCtx.lineWidth = 3;
             hudCtx.beginPath();
@@ -514,29 +648,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const eyeY = Math.floor(boxY + boxH * 0.35);
             const leftEyeX = Math.floor(boxX + boxW * 0.30);
             const rightEyeX = Math.floor(boxX + boxW * 0.70);
-            const eyeRad = Math.max(4, Math.floor(smoothEar * 18));
+            const eyeRad = Math.max(4, Math.floor(smoothEar * 20));
 
-            hudCtx.fillStyle = smoothEar < 0.21 ? "rgba(239, 68, 68, 0.9)" : "rgba(52, 211, 153, 0.9)";
+            hudCtx.fillStyle = smoothEar < 0.16 ? "rgba(239, 68, 68, 0.9)" : "rgba(52, 211, 153, 0.9)";
             hudCtx.beginPath();
             hudCtx.arc(leftEyeX, eyeY, eyeRad, 0, 2 * Math.PI);
             hudCtx.arc(rightEyeX, eyeY, eyeRad, 0, 2 * Math.PI);
             hudCtx.fill();
 
             // Mouth Landmark
-            const mouthY = Math.floor(boxY + boxH * 0.75);
+            const mouthY = Math.floor(boxY + boxH * 0.76);
             const mouthX = Math.floor(boxX + boxW * 0.50);
-            const mouthRad = Math.max(4, Math.floor(smoothMar * 20));
+            const mouthRad = Math.max(4, Math.floor(smoothMar * 22));
             hudCtx.fillStyle = smoothMar > 0.45 ? "rgba(245, 158, 11, 0.9)" : "rgba(99, 102, 241, 0.9)";
             hudCtx.beginPath();
             hudCtx.ellipse(mouthX, mouthY, mouthRad * 1.6, mouthRad, 0, 0, 2 * Math.PI);
             hudCtx.fill();
 
             // Real-time Facial Biomarker HUD Tag
-            hudCtx.fillStyle = "rgba(9, 13, 22, 0.75)";
-            hudCtx.fillRect(boxX, boxY - 26, 175, 22);
+            hudCtx.fillStyle = "rgba(9, 13, 22, 0.85)";
+            hudCtx.fillRect(boxX, boxY - 26, 185, 22);
             hudCtx.font = "bold 11px Inter, sans-serif";
             hudCtx.fillStyle = "#34D399";
-            hudCtx.fillText(`FACS LOCK: EAR ${smoothEar.toFixed(2)} | MAR ${smoothMar.toFixed(2)}`, boxX + 6, boxY - 11);
+            hudCtx.fillText(`OPTICAL LOCK: EAR ${smoothEar.toFixed(2)} | MAR ${smoothMar.toFixed(2)}`, boxX + 6, boxY - 11);
 
             if (hudEarMetric) hudEarMetric.innerText = smoothEar.toFixed(2);
         }
@@ -674,8 +808,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------
     // 7. Update Dashboard Telemetry UI
     // ---------------------------------------------------------
-    function updateDashboardTelemetry(data) {
+    function updateDashboardTelemetry(data, isForced = false) {
         if (!data) return;
+
+        const isSim = !!data.is_simulation || !!data.scenario;
+        const hasFace = !!(data.vision && data.vision.face_detected);
+
+        // Check if camera is inactive or no face detected
+        if (!isSim) {
+            if (!isCameraActive) {
+                setSensorStandbyState(false);
+                return;
+            } else if (!hasFace && !isVoiceActive) {
+                setSensorStandbyState(true);
+                return;
+            }
+        }
+
+        // Face is present: calculate dynamic faceBox for HUD
+        if (data.vision && data.vision.face_bounding_box && videoElem) {
+            const scaleX = (videoElem.videoWidth || 640) / 320;
+            const scaleY = (videoElem.videoHeight || 480) / 240;
+            faceBox = {
+                x: Math.floor(data.vision.face_bounding_box.x * scaleX),
+                y: Math.floor(data.vision.face_bounding_box.y * scaleY),
+                fw: Math.floor(data.vision.face_bounding_box.w * scaleX),
+                fh: Math.floor(data.vision.face_bounding_box.h * scaleY)
+            };
+            isFaceDetected = true;
+            smoothEar = data.vision.eye_aspect_ratio || smoothEar;
+            smoothMar = data.vision.mouth_aspect_ratio || smoothMar;
+        } else if (isSim) {
+            isFaceDetected = true;
+        }
 
         // Fused Emotion
         const fusion = data.fusion || {};
@@ -683,8 +848,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const confidence = fusion.confidence || 0.85;
 
         if (domEmotionText) {
-            domEmotionText.innerText = domEmotion.charAt(0).toUpperCase() + domEmotion.slice(1);
-            domEmotionText.className = `text-3xl font-extrabold tracking-tight ${domEmotion === 'stressed' || domEmotion === 'frustrated' ? 'text-red-400' : (domEmotion === 'fatigued' ? 'text-amber-400' : 'text-white')}`;
+            const emotionDisplayNames = {
+                'happy': 'Happy / Expressive',
+                'neutral': 'Calm / Neutral',
+                'stressed': 'Stressed / Strained',
+                'frustrated': 'Frustrated / Tense',
+                'anxious': 'Anxious / Vigilant',
+                'sad': 'Sad / Withdrawn',
+                'fatigued': 'Fatigued / Drowsy'
+            };
+            const emotionColors = {
+                'happy': 'text-emerald-400',
+                'neutral': 'text-cyan-300',
+                'stressed': 'text-red-400',
+                'frustrated': 'text-rose-500',
+                'anxious': 'text-amber-400',
+                'sad': 'text-blue-400',
+                'fatigued': 'text-purple-400'
+            };
+            domEmotionText.innerText = emotionDisplayNames[domEmotion] || (domEmotion.charAt(0).toUpperCase() + domEmotion.slice(1));
+            domEmotionText.className = `text-3xl font-extrabold tracking-tight ${emotionColors[domEmotion] || 'text-white'}`;
         }
         if (domEmotionConf) domEmotionConf.innerText = `${(confidence * 100).toFixed(0)}%`;
 
@@ -693,9 +876,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (domEmotion === 'stressed' || domEmotion === 'frustrated') {
                 emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_up</span><span>Worsening</span>';
                 emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-semibold text-xs flex items-center gap-1.5';
-            } else if (domEmotion === 'fatigued') {
-                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_up</span><span>Elevating</span>';
+            } else if (domEmotion === 'anxious') {
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">warning</span><span>Elevated</span>';
                 emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold text-xs flex items-center gap-1.5';
+            } else if (domEmotion === 'sad') {
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_down</span><span>Low Affect</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 font-semibold text-xs flex items-center gap-1.5';
+            } else if (domEmotion === 'fatigued') {
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">bedtime</span><span>Fatigue Buildup</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 font-semibold text-xs flex items-center gap-1.5';
+            } else if (domEmotion === 'happy') {
+                emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">mood</span><span>Positive Flow</span>';
+                emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-xs flex items-center gap-1.5';
             } else {
                 emotionTrendBadge.innerHTML = '<span class="material-symbols-outlined text-base">trending_flat</span><span>Stable</span>';
                 emotionTrendBadge.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-xs flex items-center gap-1.5';
@@ -765,11 +957,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const phys = data.physical_distress || {};
 
         if (perclosVal) {
-            const pPct = (vision.perclos !== undefined ? (vision.perclos * 100) : (phys.perclos_percentage || 4.2)).toFixed(1);
+            const pPct = (vision.perclos !== undefined ? (vision.perclos * 100) : (phys.perclos_percentage || 0.0)).toFixed(1);
             perclosVal.innerText = `${pPct}%`;
         }
         if (hudEarMetric) {
-            hudEarMetric.innerText = (vision.eye_aspect_ratio || smoothEar || 0.31).toFixed(2);
+            hudEarMetric.innerText = (vision.eye_aspect_ratio || smoothEar || 0.28).toFixed(2);
         }
         if (blinkVal) {
             const blinks = Math.round(vision.blinks_per_min || phys.blink_rate_bpm || 16);
@@ -796,9 +988,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Mathematical Breakdown Component Updates
         const components = (data.wellbeing && data.wellbeing.components) || {};
-        if (compAffect) compAffect.innerText = `${(components.negative_affect || 0).toFixed(1)} pts`;
-        if (compFatigue) compFatigue.innerText = `${(components.ocular_fatigue || 5.5).toFixed(1)} pts`;
-        if (compTension) compTension.innerText = `${(components.autonomic_tension || 7.0).toFixed(1)} pts`;
+        if (compAffect) compAffect.innerText = `${(components.negative_affect_penalty !== undefined ? components.negative_affect_penalty : (components.negative_affect || 0)).toFixed(1)} pts`;
+        if (compFatigue) compFatigue.innerText = `${(components.ocular_fatigue_score !== undefined ? components.ocular_fatigue_score : (components.ocular_fatigue || 0)).toFixed(1)} pts`;
+        if (compTension) compTension.innerText = `${(components.autonomic_tension_score !== undefined ? components.autonomic_tension_score : (components.autonomic_tension || 0)).toFixed(1)} pts`;
+
+        // Update HUD Header Astronaut Status
+        if (hudAstronautWellbeing) {
+            if (riskScore > 70) {
+                hudAstronautWellbeing.innerText = "CRITICAL";
+                hudAstronautWellbeing.className = "text-red-400 font-semibold";
+            } else if (riskScore > 50) {
+                hudAstronautWellbeing.innerText = "ELEVATED";
+                hudAstronautWellbeing.className = "text-orange-400 font-semibold";
+            } else if (riskScore > 30) {
+                hudAstronautWellbeing.innerText = "MILD LOAD";
+                hudAstronautWellbeing.className = "text-amber-400 font-semibold";
+            } else {
+                hudAstronautWellbeing.innerText = "NOMINAL";
+                hudAstronautWellbeing.className = "text-emerald-400 font-semibold";
+            }
+        }
+        if (hudAstronautRisk) {
+            hudAstronautRisk.innerText = `${riskScore.toFixed(1)} / 100`;
+        }
 
         // Voice & Acoustic Vitals
         if (!isVoiceActive) {
@@ -1202,6 +1414,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) {
             console.error("Admin console load error:", e);
         }
+    };
+
     // ---------------------------------------------------------
     // 13. Biometric Face Recognition & Identity Engine (Upgrade)
     // ---------------------------------------------------------
@@ -1520,7 +1734,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Crew Selector Change Event (Strict Astronaut Switching)
-    const crewSelector = document.getElementById('crew-selector');
     if (crewSelector) {
         crewSelector.addEventListener('change', async (e) => {
             await window.selectCrewById(e.target.value);
@@ -1533,4 +1746,5 @@ document.addEventListener('DOMContentLoaded', () => {
     window.loadActiveAstronautProfile();
     window.loadSessionHistory();
     renderAudioWaveform();
+    setSensorStandbyState(false);
 });

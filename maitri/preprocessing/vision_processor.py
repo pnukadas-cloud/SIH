@@ -76,12 +76,6 @@ class VisionProcessor:
             if valid_faces:
                 return valid_faces
                 
-        # Default centered ROI if input is non-empty
-        if w >= 100 and h >= 100 and np.mean(gray) > 5.0:
-            cx, cy = int(w * 0.25), int(h * 0.15)
-            cw, ch = int(w * 0.50), int(h * 0.65)
-            return [(cx, cy, cw, ch)]
-            
         return []
 
     def process_frame(self, frame: np.ndarray) -> Dict[str, Any]:

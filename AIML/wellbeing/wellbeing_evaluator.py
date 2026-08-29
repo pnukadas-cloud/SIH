@@ -26,12 +26,34 @@ class WellBeingEvaluator:
         Compute deterministic well-being score (0 to 100 scale)
         where 0 = Peak Operational Calm, 100 = Critical Physiological/Psychological Distress.
         """
+        # Check if any sensor modality is actively providing data
+        face_active = fused_emotion.get("face_detected", False) or fused_emotion.get("modality_active", False)
+        speech_active = acoustic_features.get("is_speech_active", False) or (acoustic_features.get("rms_energy", 0.0) > 0.015)
+        text_active = fused_emotion.get("attention_weights", {}).get("linguistic_gamma", 0.0) > 0.3
+
+        if not face_active and not speech_active and not text_active:
+            return {
+                "wellbeing_score": 0.0,
+                "is_active": False,
+                "level": 0,
+                "tier_name": "Standby: No Optical Stream",
+                "status_color": "slate",
+                "recommendation": "Optical & acoustic sensors in standby. Activate camera to start real-time monitoring.",
+                "components": {
+                    "negative_affect_penalty": 0.0,
+                    "ocular_fatigue_score": 0.0,
+                    "autonomic_tension_score": 0.0,
+                    "cross_modal_discordance_penalty": 0.0
+                },
+                "formula_explanation": "Sensors in standby — real-time evaluation inactive."
+            }
+
         valence = fused_emotion.get("valence", 0.0)      # -1.0 to +1.0
         arousal = fused_emotion.get("arousal", 0.2)      #  0.0 to  1.0
         dominant = fused_emotion.get("dominant_emotion", "neutral")
         
-        perclos = physical_features.get("perclos_percentage", 4.0) # e.g. 4.0%
-        vocal_tension = acoustic_features.get("vocal_tension_score", 0.1) # 0.0 to 1.0
+        perclos = physical_features.get("perclos_percentage", 0.0) # e.g. 0.0%
+        vocal_tension = acoustic_features.get("vocal_tension_score", 0.0) # 0.0 to 1.0
         pitch_f0 = acoustic_features.get("pitch_f0_hz", 135.0)
 
         # Baseline comparison
@@ -40,12 +62,11 @@ class WellBeingEvaluator:
             base_f0 = float(baseline_vitals["mean_f0_pitch_hz"])
 
         # 1. Negative Affect Penalty (0 to 35 pts)
-        # Valence from +1.0 to -1.0 -> maps to 0 to 35
         affect_penalty = max(0.0, (-valence) * 25.0) + (10.0 if dominant in ["stressed", "frustrated", "anxious"] else 0.0)
         affect_penalty = min(35.0, affect_penalty)
 
         # 2. Ocular & Circadian Fatigue Contribution (0 to 30 pts)
-        # PERCLOS > 12% is clinical threshold for microsleep in aerospace medicine
+        # PERCLOS > 15% is clinical threshold for microsleep
         fatigue_score = min(30.0, (perclos / 15.0) * 20.0 + (10.0 if dominant == "fatigued" else 0.0))
 
         # 3. Autonomic Tension Contribution (0 to 25 pts)
