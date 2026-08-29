@@ -6,6 +6,7 @@ Provides real file downloads in JSON, vector PDF (via ReportLab), and visual JPG
 from fastapi import APIRouter, Response, Query, Request, HTTPException
 from typing import Optional
 import time
+import os
 from Backend_DB.services.export_service import ExportService
 from Backend_DB.database.connection import DatabaseManager
 from Security_API.authentication.auth_manager import USERS_DB
@@ -67,4 +68,21 @@ async def export_jpg(astronaut_id: str = Query("CREW-BAS-01")):
         content=jpg_bytes,
         media_type="image/jpeg",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@router.get("/architecture-report")
+async def export_architecture_report():
+    """Download comprehensive System Architecture & Engineering Report PDF."""
+    pdf_path = "MAITRI_Comprehensive_System_Architecture_and_Engineering_Report.pdf"
+    if not os.path.exists(pdf_path):
+        from DevOps.scripts.generate_architecture_pdf import build_pdf
+        build_pdf(pdf_path)
+        
+    with open(pdf_path, "rb") as f:
+        pdf_bytes = f.read()
+        
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="MAITRI_Comprehensive_System_Architecture_and_Engineering_Report.pdf"'}
     )
