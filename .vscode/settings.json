@@ -1,5 +1,8 @@
 {
     "liveServer.settings.port": 8000,
     "liveServer.settings.CustomBrowser": "chrome",
-    "liveServer.settings.donotShowInfoMsg": true
+    "liveServer.settings.donotShowInfoMsg": true,
+    "liveServer.settings.root": "/maitri/web/templates",
+    "livePreview.portNumber": 8000,
+    "fiveServer.port": 8000
 }
