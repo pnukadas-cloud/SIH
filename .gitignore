@@ -10,3 +10,4 @@ venv/
 .idea/
 .vscode/*
 !.vscode/settings.json
+*.pdf
