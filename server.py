@@ -64,6 +64,13 @@ class AstronautSelectRequest(BaseModel):
     astronaut_id: str
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/analysis", response_class=HTMLResponse)
+@app.get("/interventions", response_class=HTMLResponse)
+@app.get("/alerts", response_class=HTMLResponse)
+@app.get("/sessions", response_class=HTMLResponse)
+@app.get("/profile", response_class=HTMLResponse)
+@app.get("/architecture", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Render main Spacecraft HUD & Mission Control Dashboard."""
     return templates.TemplateResponse(
