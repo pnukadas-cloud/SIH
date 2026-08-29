@@ -108,20 +108,21 @@ class ConversationalAgent:
             )
             intervention_trigger = None
             
-        # 5. Situation-Based Empathetic Matching
-        else:
-            options = self.response_library.get(dom_emo, self.response_library["neutral"])
-            # Hash or select based on message length
-            idx = len(astronaut_message) % len(options)
-            template = options[idx]
-            text = template.format(callsign=callsign, name=name, station=self.station_name)
-            intervention_trigger = selected_intervention.get("id") if selected_intervention and risk_level >= 2 else None
-
+        # Delegate to intelligent MaitriCompanionAI with semantic space QA dataset
+        from AIML.maitri.companion_ai import MaitriCompanionAI
+        companion = MaitriCompanionAI()
+        res = companion.generate_response(
+            astronaut_message=astronaut_message,
+            astronaut_profile=astronaut_profile,
+            fused_emotion=fused_emotion,
+            physical_features=physical_distress or {},
+            wellbeing_assessment={"wellbeing_score": risk_data.get("risk_score", 12.0), "level": risk_level}
+        )
         return {
-            "response_text": text,
+            "response_text": res["response_text"],
             "detected_state": dom_emo,
             "risk_level": risk_level,
-            "intervention_id": intervention_trigger,
+            "intervention_id": res.get("intervention_id"),
             "verbal_guidance": selected_intervention.get("verbal_guidance") if selected_intervention and risk_level >= 2 else None,
             "timestamp": time.time()
         }

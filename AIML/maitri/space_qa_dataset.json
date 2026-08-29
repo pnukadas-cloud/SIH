@@ -1,0 +1,346 @@
+{
+  "version": "2.0.0",
+  "domain": "ISRO Bhartiya Antariksh Station (BAS) & Gaganyaan Operational Telemetry",
+  "knowledge_base": [
+    {
+      "id": "ORBIT_SPEED_ALTITUDE",
+      "category": "Orbital Mechanics",
+      "intent": "orbital_parameters",
+      "patterns": [
+        "what is our speed",
+        "how fast are we traveling",
+        "what is our velocity",
+        "what is our altitude",
+        "how high are we",
+        "orbital speed",
+        "current altitude",
+        "orbital position",
+        "where are we in orbit",
+        "how fast does the station move"
+      ],
+      "keywords": ["speed", "velocity", "altitude", "height", "km/h", "fast", "orbit", "position", "traveling", "kilometer"],
+      "answer": "Bhartiya Antariksh Station is cruising in Low Earth Orbit at an altitude of approximately 410 kilometers, traveling at an orbital velocity of 7.66 km/s (roughly 27,600 km/h). At this velocity, we complete one full rotation around the Earth every 92 minutes, experiencing 16 orbital sunrises and sunsets every 24 hours."
+    },
+    {
+      "id": "ORBITAL_SUNSET_TIME",
+      "category": "Orbital Mechanics",
+      "intent": "orbital_sunset",
+      "patterns": [
+        "when is the next sunset",
+        "when is the next sunrise",
+        "how long until night",
+        "orbital daylight",
+        "how long does daytime last"
+      ],
+      "keywords": ["sunset", "sunrise", "night", "daylight", "sun", "darkness", "daytime"],
+      "answer": "Because we orbit at 7.66 km/s, each orbital day consists of approximately 47 minutes of solar illumination followed by 45 minutes of orbital eclipse (night). Our next orbital sunset transition is scheduled in approximately 22 minutes as we cross the terminator line into the southern hemisphere."
+    },
+    {
+      "id": "ECLSS_OXYGEN_PRESSURE",
+      "category": "Life Support (ECLSS)",
+      "intent": "cabin_atmosphere",
+      "patterns": [
+        "what is the cabin pressure",
+        "is the air breathable",
+        "how is the oxygen level",
+        "check life support",
+        "what are the oxygen levels",
+        "check eclss",
+        "is cabin pressure nominal",
+        "how do we get oxygen",
+        "what is the co2 level"
+      ],
+      "keywords": ["cabin", "pressure", "oxygen", "o2", "co2", "air", "eclss", "breathable", "atmosphere", "life support", "kpa"],
+      "answer": "Station Environmental Control and Life Support System (ECLSS) is fully nominal. Total cabin pressure is 101.3 kPa with a sea-level equivalent gas mixture of 21.0% O2 and 78.1% Nitrogen. CO2 partial pressure is suppressed at 0.28 kPa via regenerative amine scrubbers. Water electrolysis units and Sabatier closed-loop recyclers are operating at 94.2% efficiency."
+    },
+    {
+      "id": "CABIN_TEMPERATURE_HUMIDITY",
+      "category": "Life Support (ECLSS)",
+      "intent": "cabin_climate",
+      "patterns": [
+        "what is the cabin temperature",
+        "is it cold in here",
+        "why is it warm",
+        "what is the humidity",
+        "temperature check",
+        "adjust climate"
+      ],
+      "keywords": ["temperature", "humidity", "climate", "cold", "warm", "degrees", "celsius", "thermal", "hvac"],
+      "answer": "Cabin environmental controls are maintaining a comfortable 21.5°C across the habitat module, with relative humidity regulated at 44.0%. Active liquid thermal loops on the external radiator panels are shedding excess electronic and biological heat into deep space."
+    },
+    {
+      "id": "WATER_RECYCLING_FOOD",
+      "category": "Station Operations",
+      "intent": "water_food_supplies",
+      "patterns": [
+        "how does water recycling work",
+        "is the water clean to drink",
+        "what food do we have",
+        "how do we eat in space",
+        "what is for dinner",
+        "check food supplies"
+      ],
+      "keywords": ["water", "drinking", "recycle", "recycled", "food", "dinner", "supplies", "eat", "meal", "hydration"],
+      "answer": "Our environmental processor reclaims 98% of all station moisture—including crew perspiration, exhaled vapor, and hygiene runoff—purifying it through catalytic oxidizers and multi-stage sub-micron filtration to exceed WHO drinking standards. Today's meal galley features ISRO DFRL-developed retort-pouched khichdi, spiced lentils, dehydrated mango slices, and rehydratable masala tea."
+    },
+    {
+      "id": "DAILY_EXERCISE_PROTOCOL",
+      "category": "Space Medicine",
+      "intent": "exercise_regime",
+      "patterns": [
+        "why do I have to exercise so much",
+        "how long do I exercise",
+        "exercise schedule",
+        "prevent muscle loss",
+        "what happens to muscles in zero gravity",
+        "treadmill protocol"
+      ],
+      "keywords": ["exercise", "workout", "muscle", "atrophy", "treadmill", "cycle", "bone", "density", "countermeasure", "zero-g"],
+      "answer": "Without gravity loading, human musculoskeletal systems lose 1 to 1.5% of bone mineral density and up to 5% muscle mass per month. To counteract this, ISRO flight medicine mandates 2.5 hours of daily countermeasure training: 60 minutes of resistive strength training on the ARED mechanism, 45 minutes of cardiovascular work on the cycle ergometer, and 30 minutes on the vibration-isolated treadmill."
+    },
+    {
+      "id": "EYE_SANS_MICROGRAVITY",
+      "category": "Space Medicine",
+      "intent": "space_flight_vision",
+      "patterns": [
+        "why do my eyes feel dry",
+        "my vision is blurry",
+        "why is vision changing in space",
+        "what is sans",
+        "spaceflight associated neuro-ocular syndrome",
+        "why are eyes itchy"
+      ],
+      "keywords": ["eye", "eyes", "vision", "blurry", "dry", "sans", "optic", "swelling", "glasses", "headache"],
+      "answer": "In microgravity, roughly 2 liters of venous fluid shifts cephalad (towards your head), increasing intracranial pressure and causing flattening of the posterior globe of the eye, known as SANS (Spaceflight Associated Neuro-ocular Syndrome). Furthermore, continuous forced cabin ventilation accelerates tear film evaporation. I recommend applying artificial tear lubricants and performing a fundoscopic ultrasound scan at tomorrow's medical checkpoint."
+    },
+    {
+      "id": "SPACE_MOTION_SICKNESS",
+      "category": "Space Medicine",
+      "intent": "space_adaptation_syndrome",
+      "patterns": [
+        "i feel dizzy",
+        "why do i feel nauseous",
+        "space sickness",
+        "space adaptation syndrome",
+        "room is spinning",
+        "vestibular disorientation"
+      ],
+      "keywords": ["dizzy", "nauseous", "nausea", "sick", "vomit", "spinning", "vestibular", "ear", "orientation", "vertigo"],
+      "answer": "You are experiencing Space Adaptation Syndrome (SAS), which affects over 60% of astronauts during orbital ingress. Without gravity pulling on inner-ear otolith calcium stones, your vestibular system is sending signals that conflict with visual inputs. Fix your gaze on a stationary cabin bulkhead, minimize rapid head rotations in roll and pitch, and sip chilled electrolyte water. Symptoms typically subside within 48 to 72 hours."
+    },
+    {
+      "id": "RADIATION_PROTECTION",
+      "category": "Space Medicine",
+      "intent": "radiation_safety",
+      "patterns": [
+        "how much radiation are we exposed to",
+        "is cosmic radiation dangerous",
+        "what about solar flares",
+        "check radiation levels",
+        "radiation dosimeter"
+      ],
+      "keywords": ["radiation", "cosmic", "solar", "flare", "shielding", "sievert", "dosimeter", "sun", "particles"],
+      "answer": "In LEO, Earth's geomagnetic field shields the station from the majority of deep galactic cosmic rays, but we still absorb roughly 0.5 to 1.0 mSv per day (equivalent to ~30 chest X-rays). In the event of a coronal mass ejection (CME) or high-energy solar proton event, station protocol directs the crew into Module 2's radiation storm shelter, where water recycling tanks and polyethylene walls provide 12 g/cm² of passive shielding."
+    },
+    {
+      "id": "SPACESTATION_DEPRESSURIZATION_EMERGENCY",
+      "category": "Emergency Procedures",
+      "intent": "depressurization_protocol",
+      "patterns": [
+        "what if the hull punctures",
+        "what happens in depressurization",
+        "cabin leak emergency",
+        "hull breach",
+        "rapid decompression"
+      ],
+      "keywords": ["puncture", "breach", "leak", "decompression", "depressurization", "hole", "hull", "micrometeorite", "emergency"],
+      "answer": "If a micrometeoroid or orbital debris (MMOD) pierces the hull, automated cabin sensors calculate the leak rate and Time to Useful Consciousness (TUC). Protocol: 1) Immediately report to Ground. 2) Locate the leaking module using ultrasonic acoustic leak detectors and visual pressure gauges. 3) Seal inter-module hatchways to isolate the breach. 4) If the leak rate exceeds 5 kPa/min, don emergency Sokol survival suits and retreat into the return crew craft."
+    },
+    {
+      "id": "FIRE_EMERGENCY_PROTOCOL",
+      "category": "Emergency Procedures",
+      "intent": "fire_safety",
+      "patterns": [
+        "what if there is a fire",
+        "fire protocol",
+        "how to put out fire in zero gravity",
+        "smoke detected",
+        "flames in space"
+      ],
+      "keywords": ["fire", "smoke", "flames", "extinguisher", "burn", "hazard", "zero-g fire"],
+      "answer": "In zero gravity, fire does not rise; without buoyancy convection, it forms a slow-moving spherical blue flame dome fed solely by forced ventilation. Emergency steps: 1) Hit the Master Alarm switch. 2) ECLSS ventilation shuts down automatically to starve flames of oxygen. 3) Don oxygen masks (PBAs). 4) Deploy carbon dioxide or fine-mist water fire extinguishers. 5) Scrub pyrolytic smoke through charcoal filter cannisters."
+    },
+    {
+      "id": "EVA_SPACEWALK_CHECKLIST",
+      "category": "Operations & Procedures",
+      "intent": "eva_spacewalk",
+      "patterns": [
+        "how do we prepare for a spacewalk",
+        "eva checklist",
+        "extravehicular activity",
+        "spacewalk protocol",
+        "how to wear spacesuit"
+      ],
+      "keywords": ["eva", "spacewalk", "suit", "airlock", "pre-breathe", "nitrogen", "bends", "checklist", "outside"],
+      "answer": "Extravehicular Activity (EVA) preparation requires a 4-hour pre-breathe protocol on 100% pure oxygen at reduced cabin pressure (70.3 kPa) to purge dissolved nitrogen from your bloodstream and prevent decompression sickness ('the bends'). Once suited in the EMU/ISRO EVA suit, perform tether integrity check, purge umbilicals, verify primary and secondary oxygen tanks at 28 MPa, and initiate airlock depressurization."
+    },
+    {
+      "id": "DOCKING_RENDEZVOUS_PROCEDURE",
+      "category": "Operations & Procedures",
+      "intent": "docking_procedure",
+      "patterns": [
+        "how does docking work",
+        "docking procedure",
+        "explain rendezvous and docking",
+        "approach radar alignment",
+        "rcs thruster docking"
+      ],
+      "keywords": ["docking", "rendezvous", "rcs", "thrusters", "alignment", "port", "approach", "capture", "probe"],
+      "answer": "Automated docking utilizes LiDAR and optical relative-navigation sensors across four approach hold gates: 100m, 50m, 10m, and final capture. Relative approach velocity is throttled below 0.15 m/s at the 10m gate. When the guide probe engages the docking cone, capture latches fire to absorb kinetic momentum, followed by 12 motorized active drive hooks drawing the mating flanges into an airtight hermetic seal."
+    },
+    {
+      "id": "MAITRI_AI_EXPLANATION",
+      "category": "MAITRI AI Assistant",
+      "intent": "maitri_system_architecture",
+      "patterns": [
+        "who are you",
+        "what is maitri",
+        "how do you work",
+        "what can you do",
+        "explain your ai system",
+        "what is your purpose",
+        "why were you built"
+      ],
+      "keywords": ["who are you", "what is maitri", "how do you work", "purpose", "system", "built", "created", "capabilities"],
+      "answer": "I am MAITRI—Multimodal AI Assistant for Psychological & Physical Well-Being, engineered by ISRO for the Bhartiya Antariksh Station (BAS). I continuously monitor astronaut biometric telemetry through three complementary channels: 1) Computer Vision analyzing Facial Action Units (FACS), eye closure (PERCLOS), and yawns; 2) Speech Acoustics tracking vocal F0 pitch and vocal tract tension; 3) Linguistic Sentiment analysis. I provide situation-aware psychological companionship, guided box breathing, and clinical early-warning risk alerts to flight surgeons."
+    },
+    {
+      "id": "MAITRI_PRIVACY_SECURITY",
+      "category": "MAITRI AI Assistant",
+      "intent": "privacy_policy",
+      "patterns": [
+        "is my telemetry private",
+        "do you spy on me",
+        "who can see my data",
+        "data security and privacy",
+        "is camera video saved"
+      ],
+      "keywords": ["privacy", "private", "spy", "security", "confidential", "stored", "telemetry", "recorded", "camera"],
+      "answer": "Your biometric telemetry is governed by strict ISRO Flight Medical Ethics guidelines. All raw video frames and audio buffers are processed in volatile RAM and immediately discarded—no visual feeds are stored on disk. Encrypted clinical summaries are accessible strictly to authorized flight surgeons via Role-Based Access Control (RBAC). Your private conversations are treated with clinical confidentiality."
+    },
+    {
+      "id": "HOMESICKNESS_EARTH_LONGING",
+      "category": "Psychology & Well-Being",
+      "intent": "homesickness_support",
+      "patterns": [
+        "i miss my family",
+        "i miss earth",
+        "i feel homesick",
+        "it is lonely up here",
+        "space feels so isolated",
+        "missing home"
+      ],
+      "keywords": ["miss", "family", "home", "earth", "homesick", "lonely", "isolated", "isolation", "friends", "distance"],
+      "answer": "Longing for home is a profoundly human and expected emotional reaction during long-duration spaceflight. You are separated by 400 kilometers of vacuum, but 1.4 billion people on Earth are carrying your courage in their hearts. When you feel disconnected, look through the cupola window: the azure ribbon of Earth's atmosphere is always below you. Would you like me to queue an encrypted voice packet to your family uplink, or align the Earth-view optical sensor?"
+    },
+    {
+      "id": "STRESS_ANXIETY_RELIEF",
+      "category": "Psychology & Well-Being",
+      "intent": "stress_management",
+      "patterns": [
+        "i am very stressed",
+        "i feel anxious",
+        "my heart is racing",
+        "so much pressure",
+        "i feel overwhelmed",
+        "too many tasks"
+      ],
+      "keywords": ["stressed", "stress", "anxious", "anxiety", "overwhelmed", "pressure", "heart", "racing", "panic", "calm"],
+      "answer": "I hear the operational strain in your cadence. When mission tempo climbs, our autonomic nervous system floods with cortisol and adrenaline. Let us engage our tactical grounding protocol: lower your shoulders away from your ears, release tension in your jaw, and let us synchronize a 4-4-4-4 Box Breathing cycle together. Inhale 1, 2, 3, 4... Hold... Exhale... You have trained thousands of hours for this; take it one singular switch at a time."
+    },
+    {
+      "id": "INSOMNIA_SLEEP_ADVICE",
+      "category": "Psychology & Well-Being",
+      "intent": "sleep_hygiene",
+      "patterns": [
+        "i cannot sleep",
+        "having trouble sleeping",
+        "why is it hard to sleep in zero g",
+        "sleep tips in space",
+        "insomnia"
+      ],
+      "keywords": ["sleep", "sleeping", "insomnia", "awake", "nap", "bed", "rest", "circadian"],
+      "answer": "Sleeping in weightlessness is disorienting because your neck muscles and limbs float without tactile feedback, and the station hull hums continuously with pumps and avionics fans. Recommendations: 1) Secure your sleeping bag straps firmly to simulate gravity pressure against your back. 2) Don sleep eye masks and 25dB noise-attenuating earplugs. 3) Avoid console screens for 30 minutes before sleep. I have adjusted your cabin light to 2700K warm amber."
+    },
+    {
+      "id": "ISRO_GAGANYAAN_HERITAGE",
+      "category": "ISRO Heritage",
+      "intent": "mission_background",
+      "patterns": [
+        "tell me about gaganyaan",
+        "what is bhartiya antariksh station",
+        "who built this station",
+        "isro human spaceflight",
+        "history of this mission"
+      ],
+      "keywords": ["gaganyaan", "bhartiya antariksh station", "bas", "isro", "history", "built", "india", "vyomnauts", "vyommitra"],
+      "answer": "The Bhartiya Antariksh Station (BAS) is India's sovereign orbital habitat, spearheaded by ISRO following the historic Gaganyaan human spaceflight missions. Powered by indigenous HLVM3 heavy launch vehicles, BAS provides long-duration microgravity laboratory facilities for materials science, biological life sciences, and deep space exploration preparation for future lunar surface missions."
+    },
+    {
+      "id": "RAKESH_SHARMA_QUOTE",
+      "category": "Inspiration & Culture",
+      "intent": "inspirational_quote",
+      "patterns": [
+        "tell me an inspirational space quote",
+        "what did rakesh sharma say",
+        "motivate me",
+        "i need motivation",
+        "tell me something inspiring"
+      ],
+      "keywords": ["quote", "inspire", "inspirational", "rakesh sharma", "motivation", "motivate", "india", "history"],
+      "answer": "When Squadron Leader Rakesh Sharma was asked by Prime Minister Indira Gandhi in 1984 how India looked from space, he famously answered without hesitation: 'Saare Jahan Se Achha Hindustan Humara' (Better than the entire world is our India). You walk in that same orbit today, carrying the aspirations of over a billion citizens as pioneers of the cosmos."
+    },
+    {
+      "id": "SPACE_JOKES_HUMOR",
+      "category": "Humor & Morale",
+      "intent": "lighthearted_humor",
+      "patterns": [
+        "tell me a joke",
+        "make me laugh",
+        "tell a space joke",
+        "cheer me up",
+        "say something funny"
+      ],
+      "keywords": ["joke", "funny", "laugh", "humor", "cheer", "amuse"],
+      "answer": "Why did the astronaut break up with the capsule? Because he needed space! Or consider this: Why did the sun go to school? To get a little brighter! Keep that smile, Commander; telemetry shows your facial Action Unit 12 (zygomatic major) just registered optimal autonomic relaxation."
+    },
+    {
+      "id": "GROUND_CONTROL_COMMUNICATION",
+      "category": "Communications",
+      "intent": "ground_station_contact",
+      "patterns": [
+        "when can we talk to ground control",
+        "who is at istrak",
+        "communication pass time",
+        "check ground telemetry link",
+        "isro ground station contact"
+      ],
+      "keywords": ["ground", "istrac", "bengaluru", "communication", "pass", "uplink", "downlink", "contact", "idrss"],
+      "answer": "Continuous telemetry and high-rate voice uplinks are maintained through ISRO's Indian Data Relay Satellite System (IDRSS) in geostationary orbit. Our primary ground control is ISTRAC in Peenya, Bengaluru, supported by deep space ground antennas in Port Blair, Sriharikota, and Mauritius. Ground link signal strength is currently nominal at -84 dBm."
+    },
+    {
+      "id": "CREW_COOPERATION_RELATIONSHIPS",
+      "category": "Psychology & Well-Being",
+      "intent": "interpersonal_relations",
+      "patterns": [
+        "crew member is annoying me",
+        "how to deal with cabin fever",
+        "interpersonal conflict in space",
+        "frustrated with the team",
+        "living in close quarters"
+      ],
+      "keywords": ["conflict", "annoying", "frustrated", "crew", "colleague", "close quarters", "cabin fever", "team", "roommate"],
+      "answer": "Living in a pressurized cylinder for months creates unavoidable friction. Space psychologists term this 'micro-social tension.' Practical steps: 1) Practice active perspective-taking—operational fatigue amplifies irritability. 2) Establish clear module boundaries for private downtime. 3) Debrief during the evening meal with transparent, non-judgmental communication. A cohesive crew is the single most vital life-support system aboard."
+    }
+  ]
+}
