@@ -478,26 +478,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isCameraActive) return;
         animFrameId = requestAnimationFrame(renderLiveHudCanvas);
 
-        if (hudCanvas && hudCtx && videoElem.readyState === videoElem.HAVE_ENOUGH_DATA) {
-            hudCanvas.width = videoElem.videoWidth || 640;
-            hudCanvas.height = videoElem.videoHeight || 480;
+        if (hudCanvas && hudCtx && videoElem.readyState >= 2) {
+            const w = videoElem.videoWidth || 640;
+            const h = videoElem.videoHeight || 480;
+            if (hudCanvas.width !== w || hudCanvas.height !== h) {
+                hudCanvas.width = w;
+                hudCanvas.height = h;
+            }
 
-            hudCtx.drawImage(videoElem, 0, 0, hudCanvas.width, hudCanvas.height);
+            // Clear transparent overlay so native video plays underneath
+            hudCtx.clearRect(0, 0, w, h);
 
-            const w = hudCanvas.width;
-            const h = hudCanvas.height;
-
-            const boxW = faceBox ? faceBox.fw : Math.floor(w * 0.38);
-            const boxH = faceBox ? faceBox.fh : Math.floor(h * 0.52);
+            const boxW = faceBox ? faceBox.fw : Math.floor(w * 0.40);
+            const boxH = faceBox ? faceBox.fh : Math.floor(h * 0.55);
             const boxX = faceBox ? faceBox.x : Math.floor((w - boxW) / 2);
             const boxY = faceBox ? faceBox.y : Math.floor((h - boxH) / 2.2);
 
             // Reticle Target Box
-            hudCtx.strokeStyle = "rgba(99, 102, 241, 0.7)";
+            hudCtx.strokeStyle = "rgba(99, 102, 241, 0.85)";
             hudCtx.lineWidth = 2;
             hudCtx.strokeRect(boxX, boxY, boxW, boxH);
 
-            const len = 16;
+            // Corner Accents
+            const len = 18;
             hudCtx.strokeStyle = "#34D399";
             hudCtx.lineWidth = 3;
             hudCtx.beginPath();
@@ -511,9 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const eyeY = Math.floor(boxY + boxH * 0.35);
             const leftEyeX = Math.floor(boxX + boxW * 0.30);
             const rightEyeX = Math.floor(boxX + boxW * 0.70);
-            const eyeRad = Math.max(3, Math.floor(smoothEar * 16));
+            const eyeRad = Math.max(4, Math.floor(smoothEar * 18));
 
-            hudCtx.fillStyle = smoothEar < 0.20 ? "rgba(239, 68, 68, 0.8)" : "rgba(52, 211, 153, 0.8)";
+            hudCtx.fillStyle = smoothEar < 0.21 ? "rgba(239, 68, 68, 0.9)" : "rgba(52, 211, 153, 0.9)";
             hudCtx.beginPath();
             hudCtx.arc(leftEyeX, eyeY, eyeRad, 0, 2 * Math.PI);
             hudCtx.arc(rightEyeX, eyeY, eyeRad, 0, 2 * Math.PI);
@@ -522,16 +525,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mouth Landmark
             const mouthY = Math.floor(boxY + boxH * 0.75);
             const mouthX = Math.floor(boxX + boxW * 0.50);
-            const mouthRad = Math.max(3, Math.floor(smoothMar * 18));
-            hudCtx.fillStyle = smoothMar > 0.45 ? "rgba(245, 158, 11, 0.8)" : "rgba(99, 102, 241, 0.8)";
+            const mouthRad = Math.max(4, Math.floor(smoothMar * 20));
+            hudCtx.fillStyle = smoothMar > 0.45 ? "rgba(245, 158, 11, 0.9)" : "rgba(99, 102, 241, 0.9)";
             hudCtx.beginPath();
-            hudCtx.ellipse(mouthX, mouthY, mouthRad * 1.5, mouthRad, 0, 0, 2 * Math.PI);
+            hudCtx.ellipse(mouthX, mouthY, mouthRad * 1.6, mouthRad, 0, 0, 2 * Math.PI);
             hudCtx.fill();
 
-            hudCtx.font = "600 12px Inter, sans-serif";
-            hudCtx.fillStyle = "#F8FAFC";
-            hudCtx.fillText(`EAR: ${smoothEar.toFixed(2)}`, boxX + 6, boxY + 16);
-            hudCtx.fillText(`MAR: ${smoothMar.toFixed(2)}`, boxX + 6, boxY + 32);
+            // Real-time Facial Biomarker HUD Tag
+            hudCtx.fillStyle = "rgba(9, 13, 22, 0.75)";
+            hudCtx.fillRect(boxX, boxY - 26, 175, 22);
+            hudCtx.font = "bold 11px Inter, sans-serif";
+            hudCtx.fillStyle = "#34D399";
+            hudCtx.fillText(`FACS LOCK: EAR ${smoothEar.toFixed(2)} | MAR ${smoothMar.toFixed(2)}`, boxX + 6, boxY - 11);
+
             if (hudEarMetric) hudEarMetric.innerText = smoothEar.toFixed(2);
         }
     }
@@ -752,6 +758,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (riskHorizonStatus) {
             riskHorizonStatus.innerText = riskScore > 70 ? 'Critical Severity' : (riskScore > 50 ? 'Moderate Alert' : 'Within Tolerance');
             riskHorizonStatus.className = `font-bold ${riskScore > 70 ? 'text-red-400' : (riskScore > 50 ? 'text-orange-400' : 'text-emerald-400')}`;
+        }
+
+        // Live Facial Biomarkers & Physical Distress Updates
+        const vision = data.vision || {};
+        const phys = data.physical_distress || {};
+
+        if (perclosVal) {
+            const pPct = (vision.perclos !== undefined ? (vision.perclos * 100) : (phys.perclos_percentage || 4.2)).toFixed(1);
+            perclosVal.innerText = `${pPct}%`;
+        }
+        if (hudEarMetric) {
+            hudEarMetric.innerText = (vision.eye_aspect_ratio || smoothEar || 0.31).toFixed(2);
+        }
+        if (blinkVal) {
+            const blinks = Math.round(vision.blinks_per_min || phys.blink_rate_bpm || 16);
+            blinkVal.innerText = `${blinks} / min`;
+        }
+        if (yawnVal) {
+            const yawns = vision.yawns_per_min !== undefined ? vision.yawns_per_min : (phys.yawns_per_min || 0);
+            yawnVal.innerText = `${yawns}`;
+        }
+        if (painVal) {
+            const au4 = (vision.action_units && vision.action_units.AU04_brow_furrow) || 0.0;
+            painVal.innerText = `${Math.round(au4 * 100)}%`;
+        }
+        if (fatigueLevelText) {
+            fatigueLevelText.innerText = phys.fatigue_level || "Nominal / Rested";
+            fatigueLevelText.className = `text-xs font-semibold ${phys.fatigue_level === 'Severe' ? 'text-red-400' : (phys.fatigue_level === 'Moderate' ? 'text-amber-400' : 'text-emerald-400')}`;
+        }
+        const lightingTag = document.getElementById('lighting-status-tag');
+        if (lightingTag && vision.lighting) {
+            const lStatus = vision.lighting.status || 'OPTIMAL';
+            const lColor = lStatus === 'OPTIMAL' ? 'text-emerald-400' : 'text-amber-400';
+            lightingTag.innerHTML = `<span class="text-slate-400">Illumination:</span> <strong class="${lColor} font-semibold ml-1">${lStatus}</strong>`;
         }
 
         // Mathematical Breakdown Component Updates
