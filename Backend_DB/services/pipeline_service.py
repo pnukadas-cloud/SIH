@@ -84,45 +84,93 @@ class MasterPipelineService:
     def set_active_astronaut(self, astronaut_id: str) -> Dict[str, Any]:
         """Switch active astronaut with strict session isolation and personal baseline loading."""
         now = time.time()
+        target_profile = None
         for p in self.crew_profiles:
             if p["astronaut_id"] == astronaut_id:
-                if self.active_astronaut.get("astronaut_id") != astronaut_id:
-                    # Finalize previous astronaut session
-                    avg_risk = float(np.mean(self.session_risk_scores)) if self.session_risk_scores else 12.0
-                    dom_state = max(self.session_emotions.items(), key=lambda i: i[1])[0] if self.session_emotions else "relaxed"
-                    self.db.upsert_session(
-                        session_id=self.current_session_id,
-                        astronaut_id=self.active_astronaut["astronaut_id"],
-                        start_time=self.session_start_time,
-                        end_time=now,
-                        dominant_state=dom_state,
-                        avg_risk_score=round(avg_risk, 1),
-                        emotion_summary=self.session_emotions,
-                        interventions_count=self.session_interventions_count,
-                        alerts_count=self.session_alerts_count,
-                        status="COMPLETED"
-                    )
+                target_profile = p
+                break
+                
+        # If not in static json, load directly from SQLite astronauts table
+        if not target_profile:
+            db_astro = self.db.get_astronaut(astronaut_id)
+            if db_astro:
+                target_profile = {
+                    "astronaut_id": db_astro["astronaut_id"],
+                    "name": db_astro["name"],
+                    "callsign": db_astro.get("callsign", ""),
+                    "role": db_astro.get("role", "Mission Specialist"),
+                    "coping_preferences": (db_astro.get("profile") or {}).get("coping_preferences", ["Tactical breathing", "Checklist review"]),
+                    "baseline_vitals": db_astro.get("baseline_vitals") or {
+                        "resting_heart_rate_bpm": 65,
+                        "blink_rate_bpm": 16.0,
+                        "resting_ear": 0.32,
+                        "resting_mar": 0.18,
+                        "mean_f0_pitch_hz": 130.0
+                    }
+                }
 
-                    # Start isolated new session for selected astronaut
-                    self.active_astronaut = p
-                    self.current_session_id = f"SESS-{astronaut_id}-{int(now)}"
-                    self.session_start_time = now
-                    self.session_emotions = {}
-                    self.session_risk_scores = []
-                    self.session_interventions_count = 0
-                    self.session_alerts_count = 0
+        if target_profile:
+            if self.active_astronaut.get("astronaut_id") != astronaut_id:
+                # Finalize previous astronaut session
+                avg_risk = float(np.mean(self.session_risk_scores)) if self.session_risk_scores else 12.0
+                dom_state = max(self.session_emotions.items(), key=lambda i: i[1])[0] if self.session_emotions else "relaxed"
+                self.db.upsert_session(
+                    session_id=self.current_session_id,
+                    astronaut_id=self.active_astronaut["astronaut_id"],
+                    start_time=self.session_start_time,
+                    end_time=now,
+                    dominant_state=dom_state,
+                    avg_risk_score=round(avg_risk, 1),
+                    emotion_summary=self.session_emotions,
+                    interventions_count=self.session_interventions_count,
+                    alerts_count=self.session_alerts_count,
+                    status="COMPLETED"
+                )
 
-                    self.db.upsert_session(
-                        session_id=self.current_session_id,
-                        astronaut_id=astronaut_id,
-                        start_time=self.session_start_time,
-                        dominant_state="relaxed",
-                        avg_risk_score=12.0,
-                        status="ACTIVE"
-                    )
-                    self.fer.set_active_astronaut(astronaut_id, p.get("baseline_vitals"))
-                return p
+                # Start isolated new session for selected astronaut
+                self.active_astronaut = target_profile
+                self.current_session_id = f"SESS-{astronaut_id}-{int(now)}"
+                self.session_start_time = now
+                self.session_emotions = {}
+                self.session_risk_scores = []
+                self.session_interventions_count = 0
+                self.session_alerts_count = 0
+
+                self.db.upsert_session(
+                    session_id=self.current_session_id,
+                    astronaut_id=astronaut_id,
+                    start_time=self.session_start_time,
+                    dominant_state="relaxed",
+                    avg_risk_score=12.0,
+                    status="ACTIVE"
+                )
+                self.fer.set_active_astronaut(astronaut_id, target_profile.get("baseline_vitals"))
+            return target_profile
         return self.active_astronaut
+
+    def close_active_session(self) -> Dict[str, Any]:
+        """Close current monitoring session upon session stop or astronaut exit."""
+        now = time.time()
+        avg_risk = float(np.mean(self.session_risk_scores)) if self.session_risk_scores else 12.0
+        dom_state = max(self.session_emotions.items(), key=lambda i: i[1])[0] if self.session_emotions else "relaxed"
+        self.db.upsert_session(
+            session_id=self.current_session_id,
+            astronaut_id=self.active_astronaut["astronaut_id"],
+            start_time=self.session_start_time,
+            end_time=now,
+            dominant_state=dom_state,
+            avg_risk_score=round(avg_risk, 1),
+            emotion_summary=self.session_emotions,
+            interventions_count=self.session_interventions_count,
+            alerts_count=self.session_alerts_count,
+            status="COMPLETED"
+        )
+        return {
+            "session_id": self.current_session_id,
+            "astronaut_id": self.active_astronaut["astronaut_id"],
+            "duration_seconds": round(now - self.session_start_time, 1),
+            "status": "COMPLETED"
+        }
 
     def process_frame_and_audio(
         self,
@@ -296,6 +344,24 @@ class MasterPipelineService:
             physical,
             wellbeing
         )
+
+        # Log dialogue to SQLite partitioned strictly by astronaut
+        astro_id = self.active_astronaut.get("astronaut_id", "CREW-BAS-01")
+        self.db.insert_dialogue(
+            astronaut_id=astro_id,
+            speaker="astronaut",
+            message=astronaut_message,
+            detected_emotion=response.get("detected_state", "neutral"),
+            risk_level=wellbeing.get("level", 0)
+        )
+        self.db.insert_dialogue(
+            astronaut_id=astro_id,
+            speaker="maitri_ai",
+            message=response["response_text"],
+            intervention_id=response.get("intervention_id"),
+            risk_level=wellbeing.get("level", 0)
+        )
+
         return {
             "ai_response": response["response_text"],
             "model_source": response["model_source"],

@@ -104,12 +104,27 @@ async def get_monitoring_sessions(astronaut_id: Optional[str] = None):
 async def get_astronaut_profile(astronaut_id: Optional[str] = None):
     """Retrieve astronaut identity, personal baseline vitals, coping preferences, and session statistics."""
     target_id = astronaut_id or pipeline_service.active_astronaut["astronaut_id"]
-    profile = next((p for p in pipeline_service.crew_profiles if p["astronaut_id"] == target_id), pipeline_service.active_astronaut)
-    sessions = pipeline_service.db.get_sessions(astronaut_id=target_id, limit=10)
-    alerts = pipeline_service.db.get_alerts(astronaut_id=target_id, limit=10)
+    db_astro = pipeline_service.db.get_astronaut(target_id)
+    if db_astro:
+        profile = {
+            "astronaut_id": db_astro["astronaut_id"],
+            "name": db_astro["name"],
+            "callsign": db_astro.get("callsign", ""),
+            "role": db_astro.get("role", ""),
+            "coping_preferences": (db_astro.get("profile") or {}).get("coping_preferences", ["Tactical breathing", "Checklist review"]),
+            "baseline_vitals": db_astro.get("baseline_vitals", {})
+        }
+    else:
+        profile = next((p for p in pipeline_service.crew_profiles if p["astronaut_id"] == target_id), pipeline_service.active_astronaut)
+        
+    sessions = pipeline_service.db.get_sessions(astronaut_id=target_id, limit=50)
+    alerts = pipeline_service.db.get_alerts(astronaut_id=target_id, limit=50)
     
     return {
         "astronaut_id": target_id,
+        "name": profile.get("name"),
+        "callsign": profile.get("callsign"),
+        "role": profile.get("role"),
         "profile": profile,
         "baseline_vitals": profile.get("baseline_vitals", {}),
         "coping_preferences": profile.get("coping_preferences", []),

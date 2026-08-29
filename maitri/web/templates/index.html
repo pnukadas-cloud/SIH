@@ -297,16 +297,30 @@
                 <span class="w-2 h-2 rounded-full bg-amber-400"></span> 5. Masked Distress
             </button>
         </div>
-        <!-- Active Astronaut Selector Dropdown -->
-        <div class="hidden sm:flex items-center gap-2 bg-dark-850 border border-slate-800 px-3 py-1 rounded-xl shrink-0">
-            <span class="material-symbols-outlined text-indigo-400 text-sm">account_circle</span>
-            <select id="crew-selector" class="bg-transparent text-xs text-slate-200 font-medium outline-none cursor-pointer">
-                {% for crew in crew_profiles %}
-                <option class="bg-dark-900 text-slate-100" value="{{ crew.astronaut_id }}" {% if crew.astronaut_id == active_astronaut.astronaut_id %}selected{% endif %}>
-                    {{ crew.callsign }} ({{ crew.name }})
-                </option>
-                {% endfor %}
-            </select>
+        <!-- Active Astronaut Selector & Identity Tools -->
+        <div class="flex items-center gap-2 shrink-0">
+            <button onclick="startFaceRecognitionScan()" id="btn-scan-face" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 flex items-center gap-1.5 transition-all shadow-sm" title="Scan webcam feed to recognize astronaut face">
+                <span class="material-symbols-outlined text-sm">face</span>
+                <span>Face ID</span>
+            </button>
+            <button onclick="openEnrollModal()" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 transition-all shadow-sm" title="Enroll new astronaut profile with face biometric embedding">
+                <span class="material-symbols-outlined text-sm">person_add</span>
+                <span>Enroll</span>
+            </button>
+            <button onclick="openManualLoginModal()" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-dark-800 hover:bg-dark-750 text-slate-300 border border-slate-700 flex items-center gap-1.5 transition-all shadow-sm" title="Manual database login">
+                <span class="material-symbols-outlined text-sm">login</span>
+                <span>Login</span>
+            </button>
+            <div class="hidden sm:flex items-center gap-2 bg-dark-850 border border-slate-800 px-3 py-1 rounded-xl shrink-0">
+                <span class="material-symbols-outlined text-indigo-400 text-sm">account_circle</span>
+                <select id="crew-selector" class="bg-transparent text-xs text-slate-200 font-medium outline-none cursor-pointer">
+                    {% for crew in crew_profiles %}
+                    <option class="bg-dark-900 text-slate-100" value="{{ crew.astronaut_id }}" {% if crew.astronaut_id == active_astronaut.astronaut_id %}selected{% endif %}>
+                        {{ crew.callsign }} ({{ crew.name }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
     </div>
 
@@ -320,6 +334,63 @@
         <!-- ======================================================== -->
         <div id="tab-dashboard" class="page-tab-view active flex flex-col gap-6">
             
+            <!-- ACTIVE ASTRONAUT IDENTITY & MONITORING STATUS CARD -->
+            <div id="astronaut-identity-card" class="web-card p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-indigo-500/30 bg-gradient-to-r from-dark-900 via-dark-850 to-indigo-950/20">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-bold text-lg shadow-inner shrink-0">
+                        <span id="hud-astronaut-avatar" class="material-symbols-outlined text-2xl">person</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h2 id="hud-astronaut-name" class="text-base font-extrabold text-white tracking-tight">Aryan</h2>
+                            <span id="hud-astronaut-id-badge" class="px-2 py-0.5 text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-lg">AST-001</span>
+                            <span id="hud-astronaut-role-badge" class="px-2 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 rounded-lg">Mission Commander</span>
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span>MONITORING: ACTIVE</span>
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                            <span>Callsign: <strong id="hud-astronaut-callsign" class="text-slate-200">GARUDA-1</strong></span>
+                            <span>·</span>
+                            <span>Well-Being: <strong id="hud-astronaut-wellbeing" class="text-emerald-400 font-semibold">NOMINAL</strong></span>
+                            <span>·</span>
+                            <span>Risk Score: <strong id="hud-astronaut-risk" class="text-slate-200">12 / 100</strong></span>
+                            <span>·</span>
+                            <span>Session: <strong id="hud-astronaut-session" class="text-indigo-300 font-mono text-[11px]">SESS-AST-001-ACTIVE</strong></span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="startFaceRecognitionScan()" id="btn-quick-face-id" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md">
+                        <span class="material-symbols-outlined text-base">face</span>
+                        <span>Scan Face to Identify</span>
+                    </button>
+                    <button onclick="openEnrollModal()" class="px-3 py-2 rounded-xl bg-dark-850 hover:bg-dark-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                        <span class="material-symbols-outlined text-base text-emerald-400">person_add</span>
+                        <span>Enroll</span>
+                    </button>
+                    <button onclick="openManualLoginModal()" class="px-3 py-2 rounded-xl bg-dark-850 hover:bg-dark-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                        <span class="material-symbols-outlined text-base text-slate-400">login</span>
+                        <span>Login</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- REAL-TIME BIOMETRIC RECOGNITION NOTIFICATION BANNER -->
+            <div id="face-id-status-banner" class="hidden web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border transition-all">
+                <div class="flex items-center gap-2.5">
+                    <span id="face-id-status-icon" class="material-symbols-outlined text-lg"></span>
+                    <div>
+                        <strong id="face-id-status-title" class="font-bold block text-white"></strong>
+                        <span id="face-id-status-msg" class="text-slate-300"></span>
+                    </div>
+                </div>
+                <button onclick="dismissFaceIdBanner()" class="text-slate-400 hover:text-white">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            </div>
+
             <!-- CAMERA & MICROPHONE PERMISSIONS / HARDWARE STATUS BANNER -->
             <div id="media-permission-banner" class="web-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-indigo-500">
                 <div class="flex items-center gap-3">
@@ -914,9 +985,74 @@
         <!-- 7. ASTRONAUT PROFILE TAB -->
         <!-- ======================================================== -->
         <div id="tab-profile" class="page-tab-view flex flex-col gap-6">
-            <div class="pb-3 border-b border-slate-800">
-                <h1 class="text-xl font-bold text-white tracking-tight">Astronaut Baseline Profiles</h1>
-                <p class="text-xs text-slate-400 mt-0.5">Calibrated psychological baselines and personalized coping mechanisms.</p>
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">Astronaut Identity & Baseline Profiles</h1>
+                    <p class="text-xs text-slate-400 mt-0.5">Database-backed crew identities, calibrated vitals baselines, and monitoring telemetry records.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="startFaceRecognitionScan()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md">
+                        <span class="material-symbols-outlined text-sm">face</span>
+                        <span>Biometric Face Scan</span>
+                    </button>
+                    <button onclick="openEnrollModal()" class="px-3 py-1.5 rounded-xl bg-dark-850 hover:bg-dark-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                        <span class="material-symbols-outlined text-sm text-emerald-400">person_add</span>
+                        <span>Enroll Astronaut</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CURRENTLY IDENTIFIED ASTRONAUT ACTIVE PROFILE SUMMARY -->
+            <div class="web-card p-6 border-l-4 border-indigo-500 bg-gradient-to-br from-dark-900 via-dark-850 to-indigo-950/20 flex flex-col gap-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 flex items-center justify-center font-bold text-xl">
+                            <span class="material-symbols-outlined text-2xl">verified_user</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Currently Monitored Astronaut</span>
+                            <div class="flex items-center gap-2.5 mt-0.5">
+                                <h2 id="profile-current-name" class="text-xl font-extrabold text-white">Aryan</h2>
+                                <span id="profile-current-id" class="px-2 py-0.5 text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-lg">AST-001</span>
+                                <span id="profile-current-role" class="px-2 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 rounded-lg">Mission Commander</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span>IDENTITY CONFIRMED</span>
+                    </span>
+                </div>
+
+                <!-- Dynamic Telemetry & Baseline Metrics Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="bg-dark-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                        <span class="text-slate-400 text-xs">Monitoring Sessions</span>
+                        <strong id="profile-current-sessions" class="text-xl font-black text-white">1</strong>
+                        <span class="text-[10px] text-emerald-400">Isolated flight records</span>
+                    </div>
+                    <div class="bg-dark-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                        <span class="text-slate-400 text-xs">Recent Interventions</span>
+                        <strong id="profile-current-interventions" class="text-xl font-black text-indigo-400">0</strong>
+                        <span class="text-[10px] text-slate-400">Prescribed countermeasures</span>
+                    </div>
+                    <div class="bg-dark-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                        <span class="text-slate-400 text-xs">Critical Alerts Logged</span>
+                        <strong id="profile-current-alerts" class="text-xl font-black text-amber-400">0</strong>
+                        <span class="text-[10px] text-slate-400">Ground triage notifications</span>
+                    </div>
+                    <div class="bg-dark-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1">
+                        <span class="text-slate-400 text-xs">Biometric Baseline</span>
+                        <strong class="text-xl font-black text-emerald-400">Active</strong>
+                        <span class="text-[10px] text-slate-400">Loaded from database</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ENROLLED ASTRONAUT DIRECTORY -->
+            <div class="pb-1">
+                <h3 class="text-sm font-bold text-slate-200">Enrolled Crew Directory (SQLite Database)</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Switch active monitoring profile or verify registered biometric parameters.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1088,6 +1224,128 @@
                 </div>
             </div>
             <div id="ai-key-feedback" class="hidden text-xs p-3 rounded-xl font-semibold"></div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- ASTRONAUT BIOMETRIC ENROLLMENT MODAL -->
+    <!-- ======================================================== -->
+    <div id="enroll-astronaut-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="web-card max-w-md w-full p-6 flex flex-col gap-4 border border-emerald-500/40 shadow-2xl relative">
+            <button onclick="closeEnrollModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-2xl">person_add</span>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Enroll New Astronaut</h3>
+                    <p class="text-xs text-slate-400">Database-backed profile with 128-D biometric face embedding</p>
+                </div>
+            </div>
+
+            <form id="enroll-form" onsubmit="handleEnrollSubmit(event)" class="flex flex-col gap-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold text-slate-300">Astronaut ID *</label>
+                        <input type="text" id="enroll-id" required placeholder="e.g. AST-004" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 font-mono" />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold text-slate-300">Full Name *</label>
+                        <input type="text" id="enroll-name" required placeholder="e.g. Dr. Vikram Sen" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-emerald-500" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold text-slate-300">Callsign *</label>
+                        <input type="text" id="enroll-callsign" required placeholder="e.g. SURYA-4" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-emerald-500" />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold text-slate-300">Mission Role *</label>
+                        <input type="text" id="enroll-role" required placeholder="e.g. Payload Specialist" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-emerald-500" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold text-slate-300">Username *</label>
+                        <input type="text" id="enroll-username" required placeholder="e.g. vikram" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-emerald-500" />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-semibold text-slate-300">Passcode *</label>
+                        <input type="password" id="enroll-password" required placeholder="••••••••" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-emerald-500" />
+                    </div>
+                </div>
+
+                <!-- Face Biometric Sample Preview / Snapshot -->
+                <div class="bg-dark-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-indigo-400">face</span>
+                        <div>
+                            <strong class="text-white block">Camera Biometric Sample</strong>
+                            <span id="enroll-face-status" class="text-[11px] text-slate-400">Webcam snapshot will extract 128-D spatial LBP embedding</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="captureEnrollmentSnapshot()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shrink-0 transition-all">
+                        Capture Frame
+                    </button>
+                </div>
+
+                <div id="enroll-feedback" class="hidden p-2.5 rounded-xl font-semibold text-center"></div>
+
+                <button type="submit" class="w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-base">how_to_reg</span>
+                    <span>Save & Complete Biometric Enrollment</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MANUAL ASTRONAUT LOGIN MODAL -->
+    <!-- ======================================================== -->
+    <div id="manual-login-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="web-card max-w-sm w-full p-6 flex flex-col gap-4 border border-indigo-500/40 shadow-2xl relative">
+            <button onclick="closeManualLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-2xl">badge</span>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Astronaut Mission Login</h3>
+                    <p class="text-xs text-slate-400">Authenticate via database credentials</p>
+                </div>
+            </div>
+
+            <form id="login-form" onsubmit="handleManualLoginSubmit(event)" class="flex flex-col gap-3 text-xs">
+                <div class="flex flex-col gap-1">
+                    <label class="font-semibold text-slate-300">Select Astronaut Profile</label>
+                    <select id="login-crew-select" onchange="syncLoginUsername(this.value)" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-indigo-500 cursor-pointer">
+                        <!-- Populated dynamically from SQLite /api/auth/astronauts -->
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="font-semibold text-slate-300">Username / Astronaut ID</label>
+                    <input type="text" id="login-username" required placeholder="e.g. aryan or AST-001" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-indigo-500 font-mono" />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="font-semibold text-slate-300">Passcode</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="bg-dark-950 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl outline-none focus:border-indigo-500" />
+                </div>
+
+                <div id="login-feedback" class="hidden p-2.5 rounded-xl font-semibold text-center"></div>
+
+                <button type="submit" class="w-full mt-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-base">login</span>
+                    <span>Authenticate & Open Session</span>
+                </button>
+            </form>
         </div>
     </div>
 

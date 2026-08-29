@@ -1202,30 +1202,335 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) {
             console.error("Admin console load error:", e);
         }
+    // ---------------------------------------------------------
+    // 13. Biometric Face Recognition & Identity Engine (Upgrade)
+    // ---------------------------------------------------------
+    window.currentAstronautId = "AST-001";
+    let enrollCapturedFrame = null;
+
+    window.dismissFaceIdBanner = function() {
+        const banner = document.getElementById('face-id-status-banner');
+        if (banner) banner.classList.add('hidden');
+    };
+
+    window.openEnrollModal = function() {
+        const modal = document.getElementById('enroll-astronaut-modal');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeEnrollModal = function() {
+        const modal = document.getElementById('enroll-astronaut-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.openManualLoginModal = function() {
+        const modal = document.getElementById('manual-login-modal');
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeManualLoginModal = function() {
+        const modal = document.getElementById('manual-login-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    window.captureEnrollmentSnapshot = function() {
+        if (!videoElem || !isCameraActive || videoElem.videoWidth === 0) {
+            alert("Please start the webcam camera first to capture a live face sample.");
+            return;
+        }
+        const offscreen = document.createElement('canvas');
+        offscreen.width = 320;
+        offscreen.height = 240;
+        const ctx = offscreen.getContext('2d');
+        ctx.drawImage(videoElem, 0, 0, 320, 240);
+        enrollCapturedFrame = offscreen.toDataURL('image/jpeg', 0.85);
+
+        const statusLabel = document.getElementById('enroll-face-status');
+        if (statusLabel) {
+            statusLabel.innerHTML = `<span class="text-emerald-400 font-bold">✓ Biometric frame captured (${offscreen.width}x${offscreen.height})</span>`;
+        }
+    };
+
+    window.handleEnrollSubmit = async function(e) {
+        e.preventDefault();
+        const feedback = document.getElementById('enroll-feedback');
+        feedback.className = 'p-2.5 rounded-xl text-center bg-indigo-500/10 text-indigo-300 border border-indigo-500/30';
+        feedback.innerText = "Extracting 128-D biometric signature & enrolling into database...";
+        feedback.classList.remove('hidden');
+
+        const payload = {
+            astronaut_id: document.getElementById('enroll-id').value.trim(),
+            name: document.getElementById('enroll-name').value.trim(),
+            callsign: document.getElementById('enroll-callsign').value.trim(),
+            role: document.getElementById('enroll-role').value.trim(),
+            username: document.getElementById('enroll-username').value.trim(),
+            password: document.getElementById('enroll-password').value.trim(),
+            frame: enrollCapturedFrame
+        };
+
+        try {
+            const resp = await fetch('/api/auth/enroll', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (resp.ok && data.status === 'SUCCESS') {
+                feedback.className = 'p-2.5 rounded-xl text-center bg-emerald-500/10 text-emerald-300 border border-emerald-500/30';
+                feedback.innerText = `✓ ${data.message}`;
+                await window.loadEnrolledAstronauts();
+                await window.selectCrewById(payload.astronaut_id);
+                setTimeout(() => {
+                    window.closeEnrollModal();
+                    feedback.classList.add('hidden');
+                }, 1400);
+            } else {
+                feedback.className = 'p-2.5 rounded-xl text-center bg-red-500/10 text-red-300 border border-red-500/30';
+                feedback.innerText = `Enrollment failed: ${data.detail?.error || "Unknown error"}`;
+            }
+        } catch (err) {
+            feedback.className = 'p-2.5 rounded-xl text-center bg-red-500/10 text-red-300 border border-red-500/30';
+            feedback.innerText = `Network error during enrollment: ${err.message}`;
+        }
+    };
+
+    window.handleManualLoginSubmit = async function(e) {
+        e.preventDefault();
+        const feedback = document.getElementById('login-feedback');
+        feedback.className = 'p-2.5 rounded-xl text-center bg-indigo-500/10 text-indigo-300 border border-indigo-500/30';
+        feedback.innerText = "Authenticating credentials against flight database...";
+        feedback.classList.remove('hidden');
+
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+
+        try {
+            const resp = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username_or_id: username, password: password })
+            });
+            const data = await resp.json();
+            if (resp.ok && data.status === 'SUCCESS') {
+                feedback.className = 'p-2.5 rounded-xl text-center bg-emerald-500/10 text-emerald-300 border border-emerald-500/30';
+                feedback.innerText = `✓ Welcome, ${data.user.name}. Opening mission session.`;
+                await window.selectCrewById(data.user.user_id);
+                setTimeout(() => {
+                    window.closeManualLoginModal();
+                    feedback.classList.add('hidden');
+                }, 1000);
+            } else {
+                feedback.className = 'p-2.5 rounded-xl text-center bg-red-500/10 text-red-300 border border-red-500/30';
+                feedback.innerText = `Login failed: ${data.detail?.error || "Invalid credentials."}`;
+            }
+        } catch (err) {
+            feedback.className = 'p-2.5 rounded-xl text-center bg-red-500/10 text-red-300 border border-red-500/30';
+            feedback.innerText = `Network error: ${err.message}`;
+        }
+    };
+
+    window.syncLoginUsername = function(selectedId) {
+        const usernameInput = document.getElementById('login-username');
+        if (usernameInput && selectedId) {
+            usernameInput.value = selectedId;
+        }
+    };
+
+    window.startFaceRecognitionScan = async function() {
+        const banner = document.getElementById('face-id-status-banner');
+        const icon = document.getElementById('face-id-status-icon');
+        const title = document.getElementById('face-id-status-title');
+        const msg = document.getElementById('face-id-status-msg');
+
+        if (banner) {
+            banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-indigo-500/40 bg-indigo-950/30';
+            banner.classList.remove('hidden');
+            if (icon) icon.innerText = 'sync';
+            if (title) title.innerText = 'Scanning Facial Biometrics';
+            if (msg) msg.innerText = 'Capturing camera frame and evaluating 128-D spatial LBP embedding...';
+        }
+
+        // Ensure camera is active
+        if (!isCameraActive || !videoElem || videoElem.videoWidth === 0) {
+            if (btnToggleCamera) {
+                btnToggleCamera.click();
+                await new Promise(r => setTimeout(r, 1200));
+            }
+        }
+
+        // Grab current frame
+        const offscreen = document.createElement('canvas');
+        offscreen.width = 320;
+        offscreen.height = 240;
+        const ctx = offscreen.getContext('2d');
+        if (videoElem && videoElem.videoWidth > 0) {
+            ctx.drawImage(videoElem, 0, 0, 320, 240);
+        } else {
+            // Draw synthetic test face if physical camera hardware not attached
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(0, 0, 320, 240);
+            ctx.fillStyle = "#f5d0b5";
+            ctx.beginPath();
+            ctx.ellipse(160, 120, 50, 65, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        const base64Frame = offscreen.toDataURL('image/jpeg', 0.85);
+
+        try {
+            const resp = await fetch('/api/auth/recognize-face', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frame: base64Frame })
+            });
+            const data = await resp.json();
+
+            if (!banner) return;
+
+            if (data.status === 'IDENTIFIED') {
+                banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-emerald-500/40 bg-emerald-950/30';
+                if (icon) icon.innerText = 'verified_user';
+                if (title) title.innerText = `IDENTIFIED: ${data.name} (${data.astronaut_id}) · ${(data.confidence * 100).toFixed(0)}% Confidence`;
+                if (msg) msg.innerText = `Welcome, ${data.name}. Personal baseline and isolated mission session activated.`;
+
+                window.currentAstronautId = data.astronaut_id;
+                const selector = document.getElementById('crew-selector');
+                if (selector) selector.value = data.astronaut_id;
+
+                await window.loadActiveAstronautProfile();
+                window.loadSessionHistory();
+            } else if (data.status === 'LOW_CONFIDENCE') {
+                banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-amber-500/40 bg-amber-950/30';
+                if (icon) icon.innerText = 'warning';
+                if (title) title.innerText = `IDENTITY UNCERTAIN (${((data.confidence || 0.65) * 100).toFixed(0)}%)`;
+                if (msg) msg.innerText = data.message || 'Optical conditions degraded — please adjust lighting or use manual login.';
+            } else if (data.status === 'UNKNOWN') {
+                banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-amber-500/40 bg-amber-950/30';
+                if (icon) icon.innerText = 'person_search';
+                if (title) title.innerText = 'UNKNOWN ASTRONAUT';
+                if (msg) msg.innerText = 'No matching biometric profile found. Please use manual login or enroll first.';
+            } else if (data.status === 'MULTIPLE_FACES') {
+                banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-red-500/40 bg-red-950/30';
+                if (icon) icon.innerText = 'group';
+                if (title) title.innerText = 'MULTIPLE ASTRONAUTS DETECTED';
+                if (msg) msg.innerText = 'Multiple faces in viewport — biometric confirmation aborted for safety.';
+            } else {
+                banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-slate-700 bg-dark-900';
+                if (icon) icon.innerText = 'visibility_off';
+                if (title) title.innerText = 'NO ASTRONAUT DETECTED';
+                if (msg) msg.innerText = 'Please center your face in the camera viewport and try again.';
+            }
+        } catch (err) {
+            console.error("Face recognition error:", err);
+            if (banner) {
+                banner.className = 'web-card p-3 rounded-xl flex items-center justify-between gap-3 text-xs border border-red-500/40 bg-red-950/30';
+                if (icon) icon.innerText = 'error';
+                if (title) title.innerText = 'Biometric Scan Error';
+                if (msg) msg.innerText = 'Could not reach identity recognition service.';
+            }
+        }
+    };
+
+    window.selectCrewById = async function(astronautId) {
+        try {
+            const resp = await fetch('/api/crew/select', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ astronaut_id: astronautId })
+            });
+            const data = await resp.json();
+            window.currentAstronautId = astronautId;
+            const selector = document.getElementById('crew-selector');
+            if (selector) selector.value = astronautId;
+            await window.loadActiveAstronautProfile();
+            window.loadSessionHistory();
+        } catch (err) {
+            console.error("Error switching crew profile:", err);
+        }
+    };
+
+    window.loadEnrolledAstronauts = async function() {
+        try {
+            const resp = await fetch('/api/auth/astronauts');
+            const data = await resp.json();
+            if (data.status === 'SUCCESS' && Array.isArray(data.astronauts)) {
+                const crewSelector = document.getElementById('crew-selector');
+                const loginSelect = document.getElementById('login-crew-select');
+
+                if (crewSelector) {
+                    crewSelector.innerHTML = '';
+                    data.astronauts.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.astronaut_id;
+                        opt.className = 'bg-dark-900 text-slate-100';
+                        opt.innerText = `${a.callsign || a.astronaut_id} (${a.name})`;
+                        if (a.astronaut_id === window.currentAstronautId) opt.selected = true;
+                        crewSelector.appendChild(opt);
+                    });
+                }
+
+                if (loginSelect) {
+                    loginSelect.innerHTML = '<option value="">-- Choose Enrolled Astronaut --</option>';
+                    data.astronauts.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.astronaut_id;
+                        opt.innerText = `${a.astronaut_id} — ${a.name} (${a.role})`;
+                        loginSelect.appendChild(opt);
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load enrolled astronauts from DB:", e);
+        }
+    };
+
+    window.loadActiveAstronautProfile = async function() {
+        try {
+            const resp = await fetch(`/api/astronaut/profile?astronaut_id=${window.currentAstronautId}`);
+            const data = await resp.json();
+            if (data && data.profile) {
+                const p = data.profile;
+                const hudName = document.getElementById('hud-astronaut-name');
+                const hudId = document.getElementById('hud-astronaut-id-badge');
+                const hudRole = document.getElementById('hud-astronaut-role-badge');
+                const hudCallsign = document.getElementById('hud-astronaut-callsign');
+                const hudSession = document.getElementById('hud-astronaut-session');
+
+                if (hudName) hudName.innerText = p.name || data.astronaut_id;
+                if (hudId) hudId.innerText = data.astronaut_id;
+                if (hudRole) hudRole.innerText = p.role || 'Mission Specialist';
+                if (hudCallsign) hudCallsign.innerText = p.callsign || 'Flight-Crew';
+                if (hudSession && data.active_session_id) hudSession.innerText = data.active_session_id;
+
+                // Update Profile Tab Active Section if present
+                const profName = document.getElementById('profile-current-name');
+                const profId = document.getElementById('profile-current-id');
+                const profRole = document.getElementById('profile-current-role');
+                const profSessions = document.getElementById('profile-current-sessions');
+                const profAlerts = document.getElementById('profile-current-alerts');
+                if (profName) profName.innerText = p.name;
+                if (profId) profId.innerText = data.astronaut_id;
+                if (profRole) profRole.innerText = p.role;
+                if (profSessions) profSessions.innerText = data.recent_sessions_count || 0;
+                if (profAlerts) profAlerts.innerText = data.recent_alerts_count || 0;
+            }
+        } catch (e) {
+            console.error("Error loading active astronaut profile:", e);
+        }
     };
 
     // Crew Selector Change Event (Strict Astronaut Switching)
     const crewSelector = document.getElementById('crew-selector');
     if (crewSelector) {
         crewSelector.addEventListener('change', async (e) => {
-            const selectedId = e.target.value;
-            try {
-                const resp = await fetch('/api/crew/select', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ astronaut_id: selectedId })
-                });
-                const res = await resp.json();
-                console.log("[MAITRI] Switched active astronaut:", res);
-                window.loadSessionHistory();
-            } catch (err) {
-                console.error("Error switching astronaut:", err);
-            }
+            await window.selectCrewById(e.target.value);
         });
     }
 
-    // Initialize Real-Time WebSocket, Sessions, and Audio Waveform
+    // Initialize Real-Time WebSocket, Sessions, Audio Waveform & Enrolled Astronauts
     initWebSocket();
+    window.loadEnrolledAstronauts();
+    window.loadActiveAstronautProfile();
     window.loadSessionHistory();
     renderAudioWaveform();
 });

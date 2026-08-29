@@ -45,6 +45,39 @@ USERS_DB: Dict[str, Dict[str, Any]] = {
         "mission_assignment": "Gaganyaan-BAS Expedition 1",
         "clearance_level": "Level-2 (Flight Engineer)"
     },
+    # Demo Astronaut 1: Aryan (Commander)
+    "AST-001": {
+        "user_id": "AST-001",
+        "username": "aryan",
+        "name": "Aryan",
+        "callsign": "GARUDA-1",
+        "role": UserRole.ASTRONAUT,
+        "password_hash": hashlib.sha256("password123".encode()).hexdigest(),
+        "mission_assignment": "Gaganyaan-BAS Expedition 1",
+        "clearance_level": "Level-2 (Mission Commander)"
+    },
+    # Demo Astronaut 2: Riya (Flight Engineer)
+    "AST-002": {
+        "user_id": "AST-002",
+        "username": "riya",
+        "name": "Riya",
+        "callsign": "TEJAS-2",
+        "role": UserRole.ASTRONAUT,
+        "password_hash": hashlib.sha256("password123".encode()).hexdigest(),
+        "mission_assignment": "Gaganyaan-BAS Expedition 1",
+        "clearance_level": "Level-2 (Flight Engineer)"
+    },
+    # Demo Astronaut 3: Karan (Mission Specialist)
+    "AST-003": {
+        "user_id": "AST-003",
+        "username": "karan",
+        "name": "Karan",
+        "callsign": "VIKRAM-3",
+        "role": UserRole.ASTRONAUT,
+        "password_hash": hashlib.sha256("password123".encode()).hexdigest(),
+        "mission_assignment": "Gaganyaan-BAS Expedition 1",
+        "clearance_level": "Level-2 (Mission Specialist)"
+    },
     # Flight Surgeon / Admin: Dr. Sunita Sharma (Ground Station)
     "ADMIN-MED-01": {
         "user_id": "ADMIN-MED-01",
@@ -66,10 +99,30 @@ SESSION_EXPIRY_SECONDS = 86400  # 24 hours
 class AuthManager:
     @staticmethod
     def verify_credentials(user_id_or_name: str, password_plain: str) -> Optional[Dict[str, Any]]:
-        """Verify user credentials and return user record if valid."""
+        """Verify user credentials against database first, with fallback to in-memory store."""
         input_hash = hashlib.sha256(password_plain.encode()).hexdigest()
         
-        # Search by user_id or username
+        # 1. Database-backed verification (Primary)
+        try:
+            from Backend_DB.database.connection import DatabaseManager
+            db = DatabaseManager()
+            db_user = db.get_astronaut(user_id_or_name) or db.get_astronaut_by_username(user_id_or_name)
+            if db_user:
+                if db_user.get("password_hash") == input_hash:
+                    role_enum = UserRole.ADMIN if ("admin" in (db_user.get("role") or "").lower() or "surgeon" in (db_user.get("role") or "").lower()) else UserRole.ASTRONAUT
+                    return {
+                        "user_id": db_user["astronaut_id"],
+                        "username": db_user.get("username", ""),
+                        "name": db_user["name"],
+                        "callsign": db_user.get("callsign", ""),
+                        "role": role_enum,
+                        "mission_assignment": (db_user.get("profile") or {}).get("mission_assignment", "Gaganyaan-BAS Expedition 1"),
+                        "clearance_level": (db_user.get("profile") or {}).get("clearance_level", "Level-2 (Flight Crew)")
+                    }
+        except Exception:
+            pass
+
+        # 2. In-memory fallback
         for user in USERS_DB.values():
             if (user["user_id"].lower() == user_id_or_name.lower() or 
                 user["username"].lower() == user_id_or_name.lower()):
